@@ -1,0 +1,23 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply bg-gray-50 text-gray-900;
+  }
+}
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+  padding: 0;
+}
+
+.react-flow__node {
+  @apply shadow-md rounded-lg;
+}
+
+.highlight {
+  @apply bg-yellow-200 cursor-pointer rounded-sm px-0.5;
+} 
