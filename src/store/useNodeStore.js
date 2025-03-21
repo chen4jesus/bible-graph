@@ -3,8 +3,8 @@ import { persist } from 'zustand/middleware';
 import { nanoid } from 'nanoid';
 
 const useNodeStore = create(
-  persist(
-    (set, get) => ({
+    persist(
+      (set, get) => ({
       nodes: [],
       edges: [],
       selectedNode: null,
@@ -62,7 +62,11 @@ const useNodeStore = create(
           data: {
             title: `${book} ${chapter}:${verse}`,
             datetime: new Date().toISOString(),
-            description: `Bible reference: ${book} ${chapter}:${verse}`,
+            // t() is not properly set up in this store file
+            // We need to either:
+            // 1. Pass t as a parameter to createBibleReferenceNode
+            // 2. Or use a more generic description without translation
+            description: `Bible Reference: ${book} ${chapter}:${verse}`,
             bibleReference,
             isBibleRef: true,
             referencedBy: [],

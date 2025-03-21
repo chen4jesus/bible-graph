@@ -42,7 +42,16 @@
     "actions": {
       "createConnected": "Create connected node",
       "edit": "Edit node",
-      "delete": "Delete node"
+      "delete": "Delete node",
+      "editKnowledgeNode": "Edit Knowledge Node",
+      "createConnectedNode": "Create Connected Node",
+      "createKnowledgeNode": "Create Knowledge Node",
+      "creatingNodeConnectedTo": "Creating node connected to:"  
+    },
+    "placeholders": {
+      "title": "Enter a title for this node",
+      "connectedThought": "Thought related to \"{{title}}\"",
+      "description": "Enter insights, thoughts, or context for this verse"
     },
     "title": "Title",
     "createdAt": "Created At",

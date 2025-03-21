@@ -42,7 +42,16 @@
     "actions": {
       "createConnected": "创建连接节点",
       "edit": "编辑节点",
-      "delete": "删除节点"
+      "delete": "删除节点",
+      "editKnowledgeNode": "编辑知识节点",
+      "createConnectedNode": "创建连接节点",
+      "createKnowledgeNode": "创建知识节点",
+      "creatingNodeConnectedTo": "正在创建连接节点..."
+    },
+    "placeholders": {
+      "title": "输入节点标题",
+      "connectedThought": "与 \"{{title}}\" 相关的想法",
+      "description": "输入见解、想法或上下文"
     },
     "title": "标题",
     "createdAt": "创建时间",

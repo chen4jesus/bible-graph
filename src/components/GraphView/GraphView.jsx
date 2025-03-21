@@ -150,63 +150,63 @@ const GraphView = () => {
   
   // Define layoutAlgorithms inside the component
   const layoutAlgorithms = useMemo(() => ({
-    circle: (nodes, centerX = 0, centerY = 0) => {
-      const regularNodes = nodes.filter(node => !node.data.isBibleRef);
-      const bibleNodes = nodes.filter(node => node.data.isBibleRef);
-      
+  circle: (nodes, centerX = 0, centerY = 0) => {
+    const regularNodes = nodes.filter(node => !node.data.isBibleRef);
+    const bibleNodes = nodes.filter(node => node.data.isBibleRef);
+    
       // Position Bible nodes in a row at the very top - use smaller spacing in split view
       const bibleUpdatedNodes = bibleNodes.map((node, index) => {
         const totalWidth = bibleNodes.length * 90; // Reduced from 120
         const startX = centerX - totalWidth / 2;
         const x = startX + index * 90; // Reduced from 120
         const y = -200; // Reduced from -400 to fit in smaller view
-        
-        return {
-          ...node,
-          position: { x, y },
+      
+      return {
+        ...node,
+        position: { x, y },
           style: { 
             ...node.style,
             background: '#e9f5fe',
             borderColor: '#0ea5e9',
           }
-        };
-      });
-      
+      };
+    });
+    
       // Position regular nodes in a smaller circle below the Bible nodes
       const regularUpdatedNodes = regularNodes.map((node, index) => {
         const angle = (index / Math.max(1, regularNodes.length)) * 2 * Math.PI;
         const radius = 150; // Reduced from 250 for smaller circle
-        const x = centerX + radius * Math.cos(angle);
+      const x = centerX + radius * Math.cos(angle);
         const y = centerY + radius * Math.sin(angle) + 50; // Reduced from 100
-        
-        return {
-          ...node,
-          position: { x, y },
-          style: { ...node.style }
-        };
-      });
       
-      return [...regularUpdatedNodes, ...bibleUpdatedNodes];
-    },
+      return {
+        ...node,
+        position: { x, y },
+          style: { ...node.style }
+      };
+    });
     
-    force: (nodes, edges, iterations = 80) => {
-      // Simple force-directed layout
-      const nodeMap = {};
-      const updatedNodes = [...nodes];
+    return [...regularUpdatedNodes, ...bibleUpdatedNodes];
+  },
+  
+  force: (nodes, edges, iterations = 80) => {
+    // Simple force-directed layout
+    const nodeMap = {};
+    const updatedNodes = [...nodes];
       const bibleNodes = nodes.filter(node => node.data.isBibleRef);
       const regularNodes = nodes.filter(node => !node.data.isBibleRef);
-      
-      // Initialize node positions with tighter clustering
-      updatedNodes.forEach(node => {
-        if (!node.position) {
-          node.position = { 
+    
+    // Initialize node positions with tighter clustering
+    updatedNodes.forEach(node => {
+      if (!node.position) {
+        node.position = { 
             x: Math.random() * 200 - 100, // Reduced from 300
             y: Math.random() * 200 - 100  // Reduced from 300
-          };
-        }
-        nodeMap[node.id] = node;
-      });
-      
+        };
+      }
+      nodeMap[node.id] = node;
+    });
+    
       // Function to detect edge crossings
       const detectCrossings = (edges, nodeMap) => {
         let crossings = 0;
@@ -272,39 +272,39 @@ const GraphView = () => {
       let bestPositions = {}; 
       
       // Perform iterations of force-directed algorithm for regular nodes only
-      for (let i = 0; i < iterations; i++) {
-        // Calculate damping factor that decreases with iterations
-        const dampingFactor = 1 - (i / iterations) * 0.5;
-        
+    for (let i = 0; i < iterations; i++) {
+      // Calculate damping factor that decreases with iterations
+      const dampingFactor = 1 - (i / iterations) * 0.5;
+      
         // Repulsive forces between regular nodes
         for (let j = 0; j < regularNodes.length; j++) {
           for (let k = j + 1; k < regularNodes.length; k++) {
             const node1 = regularNodes[j];
             const node2 = regularNodes[k];
-            
-            const dx = node2.position.x - node1.position.x;
-            const dy = node2.position.y - node1.position.y;
-            const distance = Math.sqrt(dx * dx + dy * dy) || 1;
-            
-            // Weaker repulsion for a more compact layout
-            const repulsionStrength = 3000 / Math.max(distance, 100) * dampingFactor;
-            const repulsionFactor = 0.6;
-            
-            const fx = (dx / distance) * repulsionStrength * repulsionFactor;
-            const fy = (dy / distance) * repulsionStrength * repulsionFactor;
-            
-            node2.position.x += fx;
-            node2.position.y += fy;
-            node1.position.x -= fx;
-            node1.position.y -= fy;
-          }
-        }
-        
-        // Attractive forces along edges for regular nodes
-        edges.forEach(edge => {
-          const source = nodeMap[edge.source];
-          const target = nodeMap[edge.target];
           
+          const dx = node2.position.x - node1.position.x;
+          const dy = node2.position.y - node1.position.y;
+          const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+          
+          // Weaker repulsion for a more compact layout
+          const repulsionStrength = 3000 / Math.max(distance, 100) * dampingFactor;
+            const repulsionFactor = 0.6;
+          
+          const fx = (dx / distance) * repulsionStrength * repulsionFactor;
+          const fy = (dy / distance) * repulsionStrength * repulsionFactor;
+          
+          node2.position.x += fx;
+          node2.position.y += fy;
+          node1.position.x -= fx;
+          node1.position.y -= fy;
+        }
+      }
+      
+        // Attractive forces along edges for regular nodes
+      edges.forEach(edge => {
+        const source = nodeMap[edge.source];
+        const target = nodeMap[edge.target];
+        
           // Skip if either node is a Bible node
           if (!source || !target || source.data.isBibleRef || target.data.isBibleRef) {
             return;
@@ -354,10 +354,10 @@ const GraphView = () => {
           regularNodes.forEach(node => {
             if (bestPositions[node.id]) {
               node.position = bestPositions[node.id];
-            }
-          });
-        }
+          }
+        });
       }
+    }
       
       // Position Bible nodes in a row at the top
       if (bibleNodes.length > 0) {
@@ -372,118 +372,118 @@ const GraphView = () => {
           };
         });
       }
-      
-      // Final pass - constrain any outliers to reasonable bounds
-      const maxDistance = 500;
+    
+    // Final pass - constrain any outliers to reasonable bounds
+    const maxDistance = 500;
       regularNodes.forEach(node => {
-        const distance = Math.sqrt(node.position.x * node.position.x + node.position.y * node.position.y);
-        if (distance > maxDistance) {
-          const scale = maxDistance / distance;
-          node.position.x *= scale;
-          node.position.y *= scale;
+      const distance = Math.sqrt(node.position.x * node.position.x + node.position.y * node.position.y);
+      if (distance > maxDistance) {
+        const scale = maxDistance / distance;
+        node.position.x *= scale;
+        node.position.y *= scale;
           // Ensure we don't push up into Bible node territory
           node.position.y = Math.max(node.position.y, 0);
-        }
-      });
-      
-      // Add styling for Bible nodes
-      return updatedNodes.map(node => ({
-        ...node,
-        style: node.data.isBibleRef ? {
-          ...node.style,
-          background: '#e9f5fe',
-          borderColor: '#0ea5e9',
-        } : node.style
-      }));
-    },
+      }
+    });
     
-    hierarchical: (nodes, edges) => {
-      const rootNodes = [];
-      const nodeMap = {};
-      const levels = {};
-      const bibleRefs = [];
-      const nonBibleNodes = [];
-      
-      // First pass: separate Bible nodes and non-Bible nodes
-      nodes.forEach(node => {
-        if (node.data.isBibleRef) {
-          bibleRefs.push(node.id);
+    // Add styling for Bible nodes
+    return updatedNodes.map(node => ({
+      ...node,
+      style: node.data.isBibleRef ? {
+        ...node.style,
+        background: '#e9f5fe',
+        borderColor: '#0ea5e9',
+      } : node.style
+    }));
+  },
+  
+  hierarchical: (nodes, edges) => {
+    const rootNodes = [];
+    const nodeMap = {};
+    const levels = {};
+    const bibleRefs = [];
+    const nonBibleNodes = [];
+    
+    // First pass: separate Bible nodes and non-Bible nodes
+    nodes.forEach(node => {
+      if (node.data.isBibleRef) {
+        bibleRefs.push(node.id);
           levels[node.id] = -1; // Bible nodes at level -1 (above everything)
-          rootNodes.push(node.id);
-        } else {
-          nonBibleNodes.push(node.id);
-        }
-        
-        nodeMap[node.id] = { ...node, children: [], parents: [] };
-      });
-      
-      // No Bible nodes? Set first non-Bible node as root
-      if (bibleRefs.length === 0 && nonBibleNodes.length > 0) {
-        const firstNodeId = nonBibleNodes[0];
-        levels[firstNodeId] = 0;
-        rootNodes.push(firstNodeId);
+        rootNodes.push(node.id);
+      } else {
+        nonBibleNodes.push(node.id);
       }
       
+        nodeMap[node.id] = { ...node, children: [], parents: [] };
+    });
+    
+    // No Bible nodes? Set first non-Bible node as root
+    if (bibleRefs.length === 0 && nonBibleNodes.length > 0) {
+      const firstNodeId = nonBibleNodes[0];
+      levels[firstNodeId] = 0;
+      rootNodes.push(firstNodeId);
+    }
+    
       // Build the hierarchy based on edges, tracking both parent and child relationships
-      edges.forEach(edge => {
-        if (nodeMap[edge.source] && nodeMap[edge.target]) {
-          nodeMap[edge.source].children.push(edge.target);
+    edges.forEach(edge => {
+      if (nodeMap[edge.source] && nodeMap[edge.target]) {
+        nodeMap[edge.source].children.push(edge.target);
           nodeMap[edge.target].parents.push(edge.source);
-        }
-      });
-      
-      // Second pass: ensure non-Bible nodes without incoming edges 
+      }
+    });
+    
+    // Second pass: ensure non-Bible nodes without incoming edges 
       // connect to level 0 (below Bible nodes)
-      nonBibleNodes.forEach(nodeId => {
-        const hasIncoming = edges.some(edge => edge.target === nodeId);
-        
-        // If no incoming edges and level not set yet
-        if (!hasIncoming && levels[nodeId] === undefined) {
+    nonBibleNodes.forEach(nodeId => {
+      const hasIncoming = edges.some(edge => edge.target === nodeId);
+      
+      // If no incoming edges and level not set yet
+      if (!hasIncoming && levels[nodeId] === undefined) {
           // Start at level 0 (below Bible nodes at -1)
           levels[nodeId] = 0;
-          
-          // Not a direct child of any node, but we place it at level 0
-          if (!rootNodes.includes(nodeId)) {
-            rootNodes.push(nodeId);
-          }
-        }
-      });
-      
-      // Assign levels to all remaining nodes through BFS
-      const queue = [...rootNodes];
-      while (queue.length > 0) {
-        const nodeId = queue.shift();
-        const node = nodeMap[nodeId];
-        const currentLevel = levels[nodeId];
         
-        node.children.forEach(childId => {
+          // Not a direct child of any node, but we place it at level 0
+        if (!rootNodes.includes(nodeId)) {
+          rootNodes.push(nodeId);
+        }
+      }
+    });
+    
+    // Assign levels to all remaining nodes through BFS
+    const queue = [...rootNodes];
+    while (queue.length > 0) {
+      const nodeId = queue.shift();
+      const node = nodeMap[nodeId];
+        const currentLevel = levels[nodeId];
+      
+      node.children.forEach(childId => {
           // Skip if child is a Bible node (they stay at level -1)
           if (nodeMap[childId].data.isBibleRef) return;
           
           // Ensure child level is at least one below parent
           const minLevel = currentLevel + 1;
-          
-          if (levels[childId] === undefined || levels[childId] < minLevel) {
-            levels[childId] = minLevel;
-            queue.push(childId);
-          }
-        });
-      }
-      
-      // Position nodes based on their levels
-      const levelCounts = {};
-      const updatedNodes = [];
-      
-      // Calculate how many nodes per level
-      Object.keys(levels).forEach(nodeId => {
-        const level = levels[nodeId];
-        levelCounts[level] = (levelCounts[level] || 0) + 1;
+        
+        if (levels[childId] === undefined || levels[childId] < minLevel) {
+          levels[childId] = minLevel;
+          queue.push(childId);
+        }
       });
-      
+    }
+    
+    // Position nodes based on their levels
+    const levelCounts = {};
+    const updatedNodes = [];
+    
+    // Calculate how many nodes per level
+    Object.keys(levels).forEach(nodeId => {
+      const level = levels[nodeId];
+      levelCounts[level] = (levelCounts[level] || 0) + 1;
+    });
+    
       // Create a nodes-by-level mapping to aid in edge crossing reduction
       const nodesByLevel = {};
-      Object.keys(levels).forEach(nodeId => {
-        const level = levels[nodeId];
+    Object.keys(levels).forEach(nodeId => {
+      const level = levels[nodeId];
         if (!nodesByLevel[level]) {
           nodesByLevel[level] = [];
         }
@@ -599,43 +599,43 @@ const GraphView = () => {
     isApplyingLayoutRef.current = true;
     
     try {
-      // Get nodes from the current state without using the state directly
-      const currentNodes = [...nodes];
-      const currentEdges = [...edges];
-      
-      // Avoid creating a new state update cycle by working with copies
-      let updatedNodes;
+    // Get nodes from the current state without using the state directly
+    const currentNodes = [...nodes];
+    const currentEdges = [...edges];
+    
+    // Avoid creating a new state update cycle by working with copies
+    let updatedNodes;
       const layoutToApply = layout || selectedLayout;
       switch (layoutToApply) {
-        case 'circle':
-          updatedNodes = layoutAlgorithms.circle(currentNodes);
-          break;
-        case 'force':
-          updatedNodes = layoutAlgorithms.force(currentNodes, currentEdges);
-          break;
-        case 'hierarchical':
-          updatedNodes = layoutAlgorithms.hierarchical(currentNodes, currentEdges);
-          break;
-        default:
-          updatedNodes = layoutAlgorithms.force(currentNodes, currentEdges);
-      }
+      case 'circle':
+        updatedNodes = layoutAlgorithms.circle(currentNodes);
+        break;
+      case 'force':
+        updatedNodes = layoutAlgorithms.force(currentNodes, currentEdges);
+        break;
+      case 'hierarchical':
+        updatedNodes = layoutAlgorithms.hierarchical(currentNodes, currentEdges);
+        break;
+      default:
+        updatedNodes = layoutAlgorithms.force(currentNodes, currentEdges);
+    }
       
       console.log('Layout algorithm calculated new positions for nodes:', updatedNodes.length);
-      
-      // Set nodes without triggering a re-render cascade
-      setNodes(updatedNodes);
-      
-      // Fit view after a short delay to allow nodes to update
-      setTimeout(() => {
-        if (reactFlowInstance) {
-          reactFlowInstance.fitView({ padding: 0.2 });
-          // Update the viewport boundaries after layout changes
-          calculateBoundaries();
+    
+    // Set nodes without triggering a re-render cascade
+    setNodes(updatedNodes);
+    
+    // Fit view after a short delay to allow nodes to update
+    setTimeout(() => {
+      if (reactFlowInstance) {
+        reactFlowInstance.fitView({ padding: 0.2 });
+        // Update the viewport boundaries after layout changes
+        calculateBoundaries();
         } else {
           console.warn("ReactFlow instance not available, can't fit view");
-        }
-        // Reset the flag to allow future layout applications
-        isApplyingLayoutRef.current = false;
+      }
+      // Reset the flag to allow future layout applications
+      isApplyingLayoutRef.current = false;
       }, 200);
     } catch (err) {
       console.error("Error applying layout:", err);
@@ -827,7 +827,7 @@ const GraphView = () => {
         
         if (draggedNodeChange) {
           console.log(`Node ${draggedNodeChange.id} drag stopped`);
-          
+            
           // Find the current node
           const node = nodes.find(n => n.id === draggedNodeChange.id);
           if (node) {
@@ -872,7 +872,7 @@ const GraphView = () => {
       
       // Give time for the layout to complete then hide the indicator
       setTimeout(() => {
-        setIsLayoutChanging(false);
+          setIsLayoutChanging(false);
       }, 600);
     }, 50);
   }, [selectedLayout, reactFlowInstance, applyLayout]);
@@ -979,32 +979,32 @@ const GraphView = () => {
     >
       {/* Only render ReactFlow when container dimensions are known */}
       {isReady && containerDimensions.width > 0 && (
-        <ReactFlow
-          nodes={nodes}
-          edges={edges}
-          onNodesChange={onNodesChangeHandler}
-          onEdgesChange={onEdgesChange}
-          onConnect={handleConnect}
-          onNodeDragStop={handleNodeDragStop}
-          nodeTypes={nodeTypes}
+      <ReactFlow
+        nodes={nodes}
+        edges={edges}
+        onNodesChange={onNodesChangeHandler}
+        onEdgesChange={onEdgesChange}
+        onConnect={handleConnect}
+        onNodeDragStop={handleNodeDragStop}
+        nodeTypes={nodeTypes}
           defaultEdgeOptions={{ 
             type: 'default', 
             animated: true,
             style: { stroke: '#555', strokeWidth: 2 },
             markerEnd: { type: 'arrow' }
           }}
-          fitView
-          fitViewOptions={{ 
-            padding: 0.3,
-            includeHiddenNodes: false,
-            minZoom: 0.5,
-            maxZoom: 1.5
-          }}
-          minZoom={0.1}
-          maxZoom={2}
+        fitView
+        fitViewOptions={{ 
+          padding: 0.3,
+          includeHiddenNodes: false,
+          minZoom: 0.5,
+          maxZoom: 1.5
+        }}
+        minZoom={0.1}
+        maxZoom={2}
           defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
-          nodesDraggable={true}
-          elementsSelectable={true}
+        nodesDraggable={true}
+        elementsSelectable={true}
           panOnScroll={true}
           selectionOnDrag={false}
           panOnDrag={true}
@@ -1021,28 +1021,28 @@ const GraphView = () => {
           className="react-flow"
           proOptions={{ hideAttribution: true }}
           onInit={setReactFlowInstance}
-        >
-          <Background color="#aaa" gap={16} />
+      >
+        <Background color="#aaa" gap={16} />
           <Controls />
-          <MiniMap
-            nodeColor={(node) => {
-              if (node.data?.isBibleRef) return '#0ea5e9';
-              return '#10b981';
-            }}
-            style={{
+        <MiniMap
+          nodeColor={(node) => {
+            if (node.data?.isBibleRef) return '#0ea5e9';
+            return '#10b981';
+          }}
+          style={{
               width: 120,  // Smaller in split view
               height: 80,  // Smaller in split view
-              border: '1px solid rgba(0, 0, 0, 0.1)',
-              borderRadius: '4px'
-            }}
-            zoomable
-            pannable
+            border: '1px solid rgba(0, 0, 0, 0.1)',
+            borderRadius: '4px'
+          }}
+          zoomable
+          pannable
           />
           
           {/* Layout control buttons - simplified UI for split view */}
           <Panel position="top-right" style={{ margin: '10px' }}>
             <div className="flex gap-1 items-center justify-center bg-white p-2 rounded shadow">
-              <button
+            <button 
                 className={`px-2 py-1 text-xs rounded ${selectedLayout === 'circle' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
                 onClick={() => handleLayoutButtonClick('circle')}
               >
@@ -1060,9 +1060,9 @@ const GraphView = () => {
               >
                 {t('graph.layoutTypes.hierarchical')}
               </button>
-            </div>
-          </Panel>
-        </ReactFlow>
+          </div>
+        </Panel>
+      </ReactFlow>
       )}
       
       {/* Show loading indicator while dimensions are being calculated */}

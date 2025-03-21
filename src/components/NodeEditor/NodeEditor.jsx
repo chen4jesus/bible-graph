@@ -39,9 +39,9 @@ const NodeEditor = ({ highlightedText, existingNode, connectToNode, onClose }) =
   // Generate title placeholder based on connection source if in connected mode
   const getPlaceholder = () => {
     if (isConnectedMode) {
-      return `Thought related to "${connectToNode.data.title}"`;
+      return t('node.placeholders.connectedThought', { title: connectToNode.data.title });
     }
-    return "Enter a title for this node";
+    return t('node.placeholders.title');
   };
   
   const handleSubmit = (e) => {
@@ -97,7 +97,7 @@ const NodeEditor = ({ highlightedText, existingNode, connectToNode, onClose }) =
         style={{ cursor: 'default' }}
       >
         <h2 className="text-xl font-bold mb-4 text-gray-800">
-          {isEditMode ? 'Edit Knowledge Node' : isConnectedMode ? 'Create Connected Node' : 'Create Knowledge Node'}
+          {isEditMode ? t('node.actions.editKnowledgeNode') : isConnectedMode ? t('node.actions.createConnectedNode') : t('node.actions.createKnowledgeNode')}
         </h2>
         
         {!isEditMode && !isConnectedMode && highlightedText && (
@@ -119,7 +119,9 @@ const NodeEditor = ({ highlightedText, existingNode, connectToNode, onClose }) =
         
         {isConnectedMode && (
           <div className="mb-4 p-3 bg-gray-50 rounded border-l-4 border-teal-500 text-sm text-gray-700">
-            <div className="text-xs font-semibold text-teal-700 mb-1">Creating node connected to:</div>
+            <div className="text-xs font-semibold text-teal-700 mb-1">
+              {t('node.actions.creatingNodeConnectedTo')}
+            </div>
             <div className="font-medium">{connectToNode.data.title}</div>
             {connectToNode.data.description && (
               <div className="text-xs mt-1 text-gray-600 italic truncate">{connectToNode.data.description}</div>
@@ -152,7 +154,7 @@ const NodeEditor = ({ highlightedText, existingNode, connectToNode, onClose }) =
               className="w-full p-2 border border-gray-300 rounded h-32 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder={isConnectedMode ? "Enter your thoughts about the connection..." : "Enter insights, thoughts, or context for this verse"}
+              placeholder={isConnectedMode ? t('node.placeholders.connectedThought', { title: connectToNode.data.title }) : t('node.placeholders.description')}
             />
           </div>
           
