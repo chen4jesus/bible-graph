@@ -1,22 +1,54 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import useNodeStore from '../../store/useNodeStore';
 
-const NodeEditor = ({ highlightedText, onClose }) => {
+const NodeEditor = ({ highlightedText, existingNode, connectToNode, onClose }) => {
   const addNode = useNodeStore(state => state.addNode);
+  const updateNode = useNodeStore(state => state.updateNode);
+  const linkNodes = useNodeStore(state => state.linkNodes);
   
-  const [title, setTitle] = useState('');
-  const [description, setDescription] = useState('');
+  const [title, setTitle] = useState(existingNode ? existingNode.data.title : '');
+  const [description, setDescription] = useState(existingNode ? existingNode.data.description : '');
+  
+  const isEditMode = !!existingNode;
+  const isConnectedMode = !!connectToNode;
+  
+  // Generate title placeholder based on connection source if in connected mode
+  const getPlaceholder = () => {
+    if (isConnectedMode) {
+      return `Thought related to "${connectToNode.data.title}"`;
+    }
+    return "Enter a title for this node";
+  };
   
   const handleSubmit = (e) => {
     e.preventDefault();
     
     if (!title.trim()) return;
     
-    addNode({
-      title,
-      description,
-      bibleReference: highlightedText.verseRef,
-    });
+    if (isEditMode) {
+      updateNode(existingNode.id, {
+        title,
+        description
+      });
+    } else {
+      const nodeData = {
+        title,
+        description,
+      };
+      
+      // If created from highlighted text, add the Bible reference
+      if (highlightedText) {
+        nodeData.bibleReference = highlightedText.verseRef;
+      }
+      
+      // Create the new node
+      const newNodeId = addNode(nodeData);
+      
+      // If this is a connected node, create the link
+      if (isConnectedMode && newNodeId) {
+        linkNodes(connectToNode.id, newNodeId);
+      }
+    }
     
     onClose();
   };
@@ -24,14 +56,36 @@ const NodeEditor = ({ highlightedText, onClose }) => {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
       <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
-        <h2 className="text-xl font-bold mb-4 text-gray-800">Create Knowledge Node</h2>
+        <h2 className="text-xl font-bold mb-4 text-gray-800">
+          {isEditMode ? 'Edit Knowledge Node' : isConnectedMode ? 'Create Connected Node' : 'Create Knowledge Node'}
+        </h2>
         
-        <div className="mb-4 p-3 bg-gray-50 rounded border-l-4 border-primary-500 italic text-sm text-gray-700">
-          "{highlightedText.text}"
-          <div className="text-xs font-semibold mt-1 text-primary-600">
-            {highlightedText.verseRef}
+        {!isEditMode && !isConnectedMode && highlightedText && (
+          <div className="mb-4 p-3 bg-gray-50 rounded border-l-4 border-primary-500 italic text-sm text-gray-700">
+            "{highlightedText.text}"
+            <div className="text-xs font-semibold mt-1 text-primary-600">
+              {highlightedText.verseRef}
+            </div>
           </div>
-        </div>
+        )}
+        
+        {isEditMode && existingNode.data.bibleReference && (
+          <div className="mb-4 p-3 bg-gray-50 rounded border-l-4 border-primary-500 text-sm text-gray-700">
+            <div className="text-xs font-semibold mt-1 text-primary-600">
+              Bible Reference: {existingNode.data.bibleReference}
+            </div>
+          </div>
+        )}
+        
+        {isConnectedMode && (
+          <div className="mb-4 p-3 bg-gray-50 rounded border-l-4 border-teal-500 text-sm text-gray-700">
+            <div className="text-xs font-semibold text-teal-700 mb-1">Creating node connected to:</div>
+            <div className="font-medium">{connectToNode.data.title}</div>
+            {connectToNode.data.description && (
+              <div className="text-xs mt-1 text-gray-600 italic truncate">{connectToNode.data.description}</div>
+            )}
+          </div>
+        )}
         
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
@@ -44,7 +98,7 @@ const NodeEditor = ({ highlightedText, onClose }) => {
               className="w-full p-2 border border-gray-300 rounded focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               value={title}
               onChange={(e) => setTitle(e.target.value)}
-              placeholder="Enter a title for this node"
+              placeholder={getPlaceholder()}
               required
             />
           </div>
@@ -58,7 +112,7 @@ const NodeEditor = ({ highlightedText, onClose }) => {
               className="w-full p-2 border border-gray-300 rounded h-32 focus:ring-2 focus:ring-primary-500 focus:border-primary-500"
               value={description}
               onChange={(e) => setDescription(e.target.value)}
-              placeholder="Enter insights, thoughts, or context for this verse"
+              placeholder={isConnectedMode ? "Enter your thoughts about the connection..." : "Enter insights, thoughts, or context for this verse"}
             />
           </div>
           
@@ -74,7 +128,7 @@ const NodeEditor = ({ highlightedText, onClose }) => {
               type="submit"
               className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
             >
-              Create Node
+              {isEditMode ? 'Save Changes' : 'Create Node'}
             </button>
           </div>
         </form>

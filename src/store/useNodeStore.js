@@ -10,11 +10,11 @@ const useNodeStore = create(
       selectedNode: null,
       
       addNode: (nodeData) => {
-        const { title, description, bibleReference, referencedBy = [], referencedTo = [] } = nodeData;
+        const { title, description, bibleReference, referencedBy = [], referencedTo = [], position } = nodeData;
         const newNode = {
           id: nanoid(),
           type: 'knowledgeNode',
-          position: { x: Math.random() * 300, y: Math.random() * 300 },
+          position: position || { x: Math.random() * 300 - 150, y: Math.random() * 300 - 150 },
           data: {
             title,
             datetime: new Date().toISOString(),
@@ -55,7 +55,10 @@ const useNodeStore = create(
         const newNode = {
           id: `bible-${bibleReference}`,
           type: 'knowledgeNode',
-          position: { x: Math.random() * 300 - 150, y: Math.random() * 300 - 150 },
+          position: { 
+            x: Math.random() * 400 - 200, 
+            y: Math.random() * 200 + 200 
+          },
           data: {
             title: `${book} ${chapter}:${verse}`,
             datetime: new Date().toISOString(),
@@ -81,7 +84,7 @@ const useNodeStore = create(
           edge => edge.source === sourceId && edge.target === targetId
         );
         
-        if (edgeExists) return;
+        if (edgeExists) return targetId;
         
         // Create edge
         const edgeId = nanoid();
@@ -129,12 +132,22 @@ const useNodeStore = create(
             edges: [...state.edges, newEdge]
           };
         });
+        
+        return targetId;
       },
       
       updateNodePosition: (nodeId, position) => {
         set(state => ({
           nodes: state.nodes.map(node => 
             node.id === nodeId ? { ...node, position } : node
+          )
+        }));
+      },
+      
+      updateAllNodePositions: (positionsMap) => {
+        set(state => ({
+          nodes: state.nodes.map(node => 
+            positionsMap[node.id] ? { ...node, position: positionsMap[node.id] } : node
           )
         }));
       },
