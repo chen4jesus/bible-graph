@@ -1,0 +1,46 @@
+{
+  "appTitle": "圣经知识图谱",
+  "nav": {
+    "bibleReader": "圣经阅读器",
+    "knowledgeGraph": "知识图谱"
+  },
+  "graph": {
+    "title": "知识图谱",
+    "showTable": "显示表格",
+    "hideTable": "隐藏表格",
+    "noNodes": "尚未创建节点。通过高亮圣经文本添加节点。",
+    "stats": "{{nodeCount}} 个节点, {{bibleRefCount}} 个圣经引用, {{connectionCount}} 个连接",
+    "layout": "布局：",
+    "layoutTypes": {
+      "circle": "环形",
+      "force": "力导向",
+      "hierarchical": "层次结构"
+    },
+    "actions": {
+      "fitView": "适应视图",
+      "updateBoundary": "更新边界",
+      "saveLayout": "保存布局"
+    },
+    "boundary": "边界: {{x1}},{{y1}} 至 {{x2}},{{y2}}",
+    "applyingLayout": "正在应用{{layout}}布局..."
+  },
+  "node": {
+    "connection": "连接",
+    "connections": "连接",
+    "bibleReference": "圣经引用：",
+    "actions": {
+      "createConnected": "创建连接节点",
+      "edit": "编辑节点",
+      "delete": "删除节点"
+    }
+  },
+  "deleteConfirm": {
+    "title": "确认删除",
+    "message": "确定要删除 \"{{title}}\" 吗？",
+    "cancel": "取消",
+    "delete": "删除"
+  },
+  "table": {
+    "close": "关闭"
+  }
+} 

@@ -1,0 +1,46 @@
+{
+  "appTitle": "Bible Knowledge Graph",
+  "nav": {
+    "bibleReader": "Bible Reader",
+    "knowledgeGraph": "Knowledge Graph"
+  },
+  "graph": {
+    "title": "Knowledge Graph",
+    "showTable": "Show Table",
+    "hideTable": "Hide Table",
+    "noNodes": "No nodes created yet. Add nodes by highlighting Bible text.",
+    "stats": "{{nodeCount}} nodes, {{bibleRefCount}} Bible references, {{connectionCount}} connections",
+    "layout": "Layout:",
+    "layoutTypes": {
+      "circle": "Circle",
+      "force": "Force-Directed",
+      "hierarchical": "Hierarchical"
+    },
+    "actions": {
+      "fitView": "Fit View",
+      "updateBoundary": "Update Boundary",
+      "saveLayout": "Save Layout"
+    },
+    "boundary": "Boundary: {{x1}},{{y1}} to {{x2}},{{y2}}",
+    "applyingLayout": "Applying {{layout}} layout..."
+  },
+  "node": {
+    "connection": "connection",
+    "connections": "connections",
+    "bibleReference": "Bible reference:",
+    "actions": {
+      "createConnected": "Create connected node",
+      "edit": "Edit node",
+      "delete": "Delete node"
+    }
+  },
+  "deleteConfirm": {
+    "title": "Confirm Deletion",
+    "message": "Are you sure you want to delete \"{{title}}\"?",
+    "cancel": "Cancel",
+    "delete": "Delete"
+  },
+  "table": {
+    "close": "Close"
+  }
+} 
