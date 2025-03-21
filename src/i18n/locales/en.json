@@ -1,6 +1,11 @@
 {
   "appTitle": "Bible Knowledge Graph",
   "hintTitle": "Create Knowledge Nodes:",
+  "hintDesc": "Select any text in the Bible to create a knowledge node. Nodes will appear in the Knowledge Graph view.",
+  "bible": {
+    "bookLabel": "Book",
+    "chapterLabel": "Chapter"
+  },
   "nav": {
     "bibleReader": "Bible Reader",
     "knowledgeGraph": "Knowledge Graph"

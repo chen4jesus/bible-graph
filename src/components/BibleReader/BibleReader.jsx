@@ -1,11 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import useBibleStore from '../../store/useBibleStore';
+import { useTranslation } from 'react-i18next';
 import useNodeStore from '../../store/useNodeStore';
 import NodeEditor from '../NodeEditor/NodeEditor';
 import { getSelectedText, clearSelection } from '../../utils/textHighlighter';
 import { getChapterVerses, getBooks, getBookChapters } from '../../utils/bibleParser';
 
 const BibleReader = () => {
+  const { t } = useTranslation();
   const bibleData = useBibleStore(state => state.bibleData);
   const currentBook = useBibleStore(state => state.currentBook);
   const currentChapter = useBibleStore(state => state.currentChapter);
@@ -96,7 +98,7 @@ const BibleReader = () => {
       <div className="mb-6 flex flex-col sm:flex-row gap-4 items-center">
         <div className="flex-1">
           <label htmlFor="book-select" className="block text-sm font-medium text-gray-700 mb-1">
-            Book
+            {t('bible.bookLabel')}
           </label>
           <select
             id="book-select"
@@ -114,7 +116,7 @@ const BibleReader = () => {
         
         <div className="flex-1">
           <label htmlFor="chapter-select" className="block text-sm font-medium text-gray-700 mb-1">
-            Chapter
+            {t('bible.chapterLabel')}
           </label>
           <select
             id="chapter-select"
@@ -135,7 +137,7 @@ const BibleReader = () => {
       {showHint && (
         <div className="bg-primary-50 border-l-4 border-primary-500 p-4 mb-6 text-sm text-primary-700">
           <p className="font-medium">{t('hintTitle')}</p>
-          <p>Select any text in the Bible to create a knowledge node. Nodes will appear in the Knowledge Graph view.</p>
+          <p>{t('hintDesc')}</p>
         </div>
       )}
       

@@ -1,6 +1,11 @@
 {
   "appTitle": "圣经知识图谱",
   "hintTitle": "创建知识节点:",
+  "hintDesc": "选择文字创建知识节点，创建的节点将会现实在知识图谱页面。",
+  "bible": {
+    "bookLabel": "书卷",
+    "chapterLabel": "章节"
+  },
   "nav": {
     "bibleReader": "圣经阅读器",
     "knowledgeGraph": "知识图谱"
