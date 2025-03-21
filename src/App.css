@@ -166,4 +166,100 @@
 
 .node-table-chevron.collapsed {
   transform: rotate(180deg);
+}
+
+/* Add these explicit dimension styles for React Flow */
+.graph-view-container {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  display: flex;
+}
+
+/* Ensure ReactFlow container in split view has proper dimensions */
+.graph-view-wrapper {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.react-flow {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+.react-flow__container {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* Ensure split view has proper height */
+.w-1/2 {
+  width: 50%;
+  height: 100%;
+}
+
+/* Making sure flex works properly */
+.flex {
+  display: flex;
+}
+
+.h-full {
+  height: 100%;
+}
+
+/* App specific styles to ensure the graph view has proper height */
+main.flex-1 {
+  display: flex;
+  flex: 1;
+  height: calc(100vh - 64px) !important;
+  position: relative;
+  overflow: hidden;
+}
+
+/* Fix container heights for split view */
+.flex.h-full {
+  height: 100%;
+}
+
+/* Ensure the width and height of ReactFlow containers */
+.graph-view-wrapper {
+  width: 100% !important;
+  height: 100% !important;
+  position: absolute !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+}
+
+.graph-view-container {
+  position: absolute !important;
+  width: 100% !important;
+  height: 100% !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+}
+
+.react-flow {
+  position: absolute !important;
+  width: 100% !important;
+  height: 100% !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
+}
+
+.react-flow__container {
+  position: absolute !important;
+  width: 100% !important;
+  height: 100% !important;
+  top: 0 !important;
+  left: 0 !important;
+  right: 0 !important;
+  bottom: 0 !important;
 } 

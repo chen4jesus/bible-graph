@@ -468,6 +468,23 @@ const GraphView = () => {
   const layoutCalculatedRef = useRef(false);
   const [isLayoutChanging, setIsLayoutChanging] = useState(false);
   const containerRef = useRef(null);
+  const [containerDimensions, setContainerDimensions] = useState({ width: 0, height: 0 });
+  const [isReady, setIsReady] = useState(false);
+  
+  // Fix the initialization and split view issues by modifying the GraphViewWithFlow component
+  const [mounted, setMounted] = useState(false);
+  
+  // Add a pre-initialization step
+  useEffect(() => {
+    // Small delay to ensure DOM is ready after navigation/tab change
+    const timer = setTimeout(() => {
+      setMounted(true);
+      // Force a resize event to ensure all containers update
+      window.dispatchEvent(new Event('resize'));
+    }, 50);
+    
+    return () => clearTimeout(timer);
+  }, []);
   
   useEffect(() => {
     console.log('GraphView mounted, storeNodes:', storeNodes.length);
@@ -560,13 +577,13 @@ const GraphView = () => {
   
   // Update boundaries whenever node positions change significantly
   useEffect(() => {
-    if (nodes.length > 0 && !isApplyingLayoutRef.current) {
+    if (nodes.length > 0 && !isApplyingLayoutRef.current && isReady) {
       calculateBoundaries();
     }
-  }, [nodes, calculateBoundaries]);
+  }, [nodes, calculateBoundaries, isReady]);
   
   // Modify the applyLayout function to avoid the infinite loop
-  const applyLayout = useCallback(() => {
+  const applyLayout = useCallback((layout) => {
     // Check if we're already applying a layout or if there are no nodes
     if (isApplyingLayoutRef.current) {
       console.log("Skipping layout application - already in progress");
@@ -578,7 +595,7 @@ const GraphView = () => {
       return;
     }
     
-    console.log(`Applying ${selectedLayout} layout to ${nodes.length} nodes`);
+    console.log(`Applying ${layout || selectedLayout} layout to ${nodes.length} nodes`);
     isApplyingLayoutRef.current = true;
     
     try {
@@ -588,7 +605,8 @@ const GraphView = () => {
       
       // Avoid creating a new state update cycle by working with copies
       let updatedNodes;
-      switch (selectedLayout) {
+      const layoutToApply = layout || selectedLayout;
+      switch (layoutToApply) {
         case 'circle':
           updatedNodes = layoutAlgorithms.circle(currentNodes);
           break;
@@ -625,84 +643,61 @@ const GraphView = () => {
     }
   }, [nodes, edges, selectedLayout, setNodes, reactFlowInstance, calculateBoundaries]);
   
-  // Replace the useEffect for initial layout application
+  // Fix 2: Initialize ReactFlow only when dimensions are available
+  const setReactFlowInstance = useCallback((instance) => {
+    // Store the instance reference
+    if (instance) {
+      console.log('ReactFlow instance initialized');
+    }
+  }, []);
+  
+  // Also fix the effect for initial layout application to be more robust
   useEffect(() => {
-    if (nodes.length === 0) {
+    // Don't attempt anything if not ready
+    if (!isReady) return;
+    
+    // Ensure we have nodes to work with - either from store or local state
+    if (nodes.length === 0 && storeNodes.length === 0) {
       console.log('No nodes available for layout');
       return;
     }
     
-    console.log('Nodes available for layout:', nodes.length);
+    // If we have store nodes but haven't loaded them into local state yet, wait
+    if (nodes.length === 0 && storeNodes.length > 0) {
+      console.log('Waiting for nodes to load from store');
+      return;
+    }
     
-    // Apply layout when nodes are available and either:
-    // 1. It's the first render with nodes
-    // 2. Or layout hasn't been calculated yet
+    console.log('Ready for layout with nodes:', nodes.length);
+    
+    // Apply layout when we're ready
     if (firstRenderRef.current || !layoutCalculatedRef.current) {
-      console.log('Applying initial layout to nodes');
+      console.log('Applying initial layout');
       
-      // Use a slightly longer timeout to ensure DOM is ready
+      // Small delay to ensure everything is mounted
       const timer = setTimeout(() => {
-        console.log('Running delayed layout application');
+        if (isApplyingLayoutRef.current) {
+          console.log('Layout already in progress, skipping');
+          return;
+        }
+        
         try {
-          // Don't show the loading indicator for initial layout to avoid flashing
-          // but use the same transition logic as the layout button
+          console.log('Starting layout application');
+          applyLayout(selectedLayout);
           
-          // Get current nodes and edges
-          const currentNodes = [...nodes];
-          const currentEdges = [...edges];
-          
-          // Apply the selected layout algorithm
-          let updatedNodes;
-          switch (selectedLayout) {
-            case 'circle':
-              updatedNodes = layoutAlgorithms.circle(currentNodes);
-              break;
-            case 'force':
-              updatedNodes = layoutAlgorithms.force(currentNodes, currentEdges);
-              break;
-            case 'hierarchical':
-              updatedNodes = layoutAlgorithms.hierarchical(currentNodes, currentEdges);
-              break;
-            default:
-              updatedNodes = layoutAlgorithms.force(currentNodes, currentEdges);
-          }
-          
-          // Create a transition version of nodes
-          const transitionNodes = updatedNodes.map(node => {
-            return {
-              ...node,
-              style: {
-                ...node.style,
-                transition: 'transform 400ms ease-in-out'
-              }
-            };
-          });
-          
-          // Set nodes with transition property
-          setNodes(transitionNodes);
-          
-          // Wait for transition to finish before fitting view
-          setTimeout(() => {
-            if (reactFlowInstance) {
-              reactFlowInstance.fitView({ 
-                padding: 0.3,
-                duration: 300
-              });
-              calculateBoundaries();
-            }
-          }, 500);
-          
-          console.log('Layout applied successfully');
+          // Mark as done to avoid repetition
+          layoutCalculatedRef.current = true;
+          firstRenderRef.current = false;
         } catch (err) {
           console.error('Error applying layout:', err);
+          // Reset flags in case of error
+          isApplyingLayoutRef.current = false;
         }
-        layoutCalculatedRef.current = true;
-        firstRenderRef.current = false;
-      }, 500);
+      }, 300);
       
       return () => clearTimeout(timer);
     }
-  }, [nodes.length, edges, selectedLayout, setNodes, reactFlowInstance, calculateBoundaries, applyLayout]);
+  }, [isReady, nodes.length, storeNodes.length, selectedLayout, applyLayout]);
   
   // Separate function to save positions to the store
   const savePositionsToStore = useCallback(() => {
@@ -715,12 +710,21 @@ const GraphView = () => {
     }
   }, [nodes, updateAllNodePositions]);
   
-  // Replace useEffect for loading nodes from store with this to prevent circular dependencies
+  // Fix 3: Revise how nodes are loaded from store to prevent loops
   useEffect(() => {
+    // Skip if we're in the middle of applying a layout
+    if (isApplyingLayoutRef.current) {
+      console.log('Skipping store load during layout application');
+      return;
+    }
+    
     console.log('Store nodes/edges changed:', storeNodes.length, storeEdges.length);
     
-    // Always load nodes from store when they change, regardless of layout calculation state
-    if (storeNodes.length > 0) {
+    // Only load nodes if we don't already have the same nodes
+    if (storeNodes.length > 0 && 
+        (nodes.length !== storeNodes.length || 
+         !nodes.every(node => storeNodes.some(sNode => sNode.id === node.id)))) {
+      
       console.log('Loading nodes from store:', storeNodes);
       
       // Ensure all nodes have the correct type property
@@ -741,17 +745,15 @@ const GraphView = () => {
       console.log('Typed nodes:', typedNodes);
       console.log('Updated edges:', updatedEdges);
       
-      // Set nodes and edges
-      setNodes(typedNodes);
-      setEdges(updatedEdges);
-      
-      // Reset layout flags to ensure layout is applied
+      // Reset layout flags to trigger layout application
       layoutCalculatedRef.current = false;
       firstRenderRef.current = true;
-    } else {
-      console.log('No nodes in store');
+      
+      // Set nodes and edges (should happen once)
+      setNodes(typedNodes);
+      setEdges(updatedEdges);
     }
-  }, [storeNodes, storeEdges, setNodes, setEdges]);
+  }, [storeNodes, storeEdges, nodes, setNodes, setEdges]);
   
   // Handle new connections
   const handleConnect = useCallback(
@@ -797,7 +799,7 @@ const GraphView = () => {
     [updateNodePosition, savePositionsToStore]
   );
 
-  // Update onNodesChange handler to prevent layout application during drag operations
+  // Fix 4: Improve node change handler
   const onNodesChangeHandler = useCallback(
     (changes) => {
       // Check if any change is a drag operation
@@ -819,25 +821,19 @@ const GraphView = () => {
       );
       
       if (dragStopped) {
-        // Get the node that stopped dragging
         const draggedNodeChange = changes.find(
           (change) => change.type === 'position' && change.dragging === false
         );
         
         if (draggedNodeChange) {
-          console.log(`Node ${draggedNodeChange.id} drag stopped at position:`, 
-            draggedNodeChange.position);
-            
+          console.log(`Node ${draggedNodeChange.id} drag stopped`);
+          
           // Find the current node
           const node = nodes.find(n => n.id === draggedNodeChange.id);
           if (node) {
             // Update position in store for this specific node
             updateNodePosition(node.id, node.position);
-            
-            // Force save all positions
-            setTimeout(() => {
-              savePositionsToStore();
-            }, 10);
+            setTimeout(savePositionsToStore, 10);
           }
         }
         
@@ -848,7 +844,7 @@ const GraphView = () => {
     [nodes, onNodesChange, updateNodePosition, savePositionsToStore]
   );
   
-  // Improve handleLayoutButtonClick to ensure layout is always applied correctly
+  // Improve handleLayoutButtonClick
   const handleLayoutButtonClick = useCallback((layout) => {
     // If the layout is already selected, just fit the view
     if (layout === selectedLayout) {
@@ -861,7 +857,7 @@ const GraphView = () => {
     
     console.log(`Switching layout from ${selectedLayout} to ${layout}`);
     
-    // Reset the applying layout flag to ensure we can apply a new layout
+    // Reset the applying layout flag
     isApplyingLayoutRef.current = false;
     
     // Show layout changing indicator
@@ -870,68 +866,16 @@ const GraphView = () => {
     // Update the selected layout first
     setSelectedLayout(layout);
     
-    // Use requestAnimationFrame to ensure smoother transitions
-    requestAnimationFrame(() => {
-      // Get current nodes and edges
-      const currentNodes = [...nodes];
-      const currentEdges = [...edges];
+    // Apply the new layout
+    setTimeout(() => {
+      applyLayout(layout);
       
-      // Apply the selected layout algorithm
-      let updatedNodes;
-      switch (layout) {
-        case 'circle':
-          updatedNodes = layoutAlgorithms.circle(currentNodes);
-          break;
-        case 'force':
-          updatedNodes = layoutAlgorithms.force(currentNodes, currentEdges);
-          break;
-        case 'hierarchical':
-          updatedNodes = layoutAlgorithms.hierarchical(currentNodes, currentEdges);
-          break;
-        default:
-          updatedNodes = layoutAlgorithms.force(currentNodes, currentEdges);
-      }
-      
-      // Create a transition version of nodes by animating from current to new positions
-      const transitionNodes = updatedNodes.map(node => {
-        // Find the original node
-        const originalNode = currentNodes.find(n => n.id === node.id);
-        if (!originalNode) return node;
-        
-        return {
-          ...node,
-          // Use the same style but add transition for smooth movement
-          style: {
-            ...node.style,
-            transition: 'transform 500ms ease-in-out'
-          }
-        };
-      });
-      
-      // Set nodes with transition property
-      setNodes(transitionNodes);
-      
-      // Wait for transition to finish before fitting view
+      // Give time for the layout to complete then hide the indicator
       setTimeout(() => {
-        if (reactFlowInstance) {
-          reactFlowInstance.fitView({ 
-            padding: 0.3,
-            includeHiddenNodes: false,
-            minZoom: 0.5,
-            maxZoom: 1.5,
-            duration: 400
-          });
-          calculateBoundaries();
-        }
-        
-        // Save positions to store
-        updateAllNodePositions(transitionNodes);
-        
-        // Reset layout changing indicator
         setIsLayoutChanging(false);
-      }, 600); // Wait for transition to complete
-    });
-  }, [selectedLayout, nodes, edges, reactFlowInstance, setNodes, calculateBoundaries, updateAllNodePositions]);
+      }, 600);
+    }, 50);
+  }, [selectedLayout, reactFlowInstance, applyLayout]);
   
   // Safety mechanism to ensure the loading state is reset
   useEffect(() => {
@@ -940,7 +884,7 @@ const GraphView = () => {
     if (isLayoutChanging) {
       layoutTimer = setTimeout(() => {
         setIsLayoutChanging(false);
-      }, 3000); // Maximum 3 seconds wait time
+      }, 3000); // Maximum 3 seconds
     }
     
     return () => {
@@ -948,206 +892,195 @@ const GraphView = () => {
     };
   }, [isLayoutChanging]);
   
-  // Detect when we're in split view and adjust the graph layout
+  // Fix 5: Simplify the split view detection and avoid layout loops
   useEffect(() => {
-    // We don't have direct access to the splitView state from App.jsx
-    // but we can check if the container width has changed significantly
-    const checkAndAdjustLayout = () => {
-      const containerWidth = containerRef.current?.clientWidth || 0;
-      
-      // If our container width is less than full screen, we're likely in split view
-      if (containerWidth > 0 && containerWidth < window.innerWidth * 0.8) {
-        console.log('Detected split view, adjusting graph layout');
-        
-        // Give React Flow time to update its internal dimensions
-        setTimeout(() => {
-          // First fit the view to show all nodes
-          if (reactFlowInstance) {
-            reactFlowInstance.fitView({ padding: 0.2 });
-          }
-          
-          // Then apply the layout if we already have nodes
-          if (nodes.length > 0 && !isApplyingLayoutRef.current) {
-            applyLayout(selectedLayout);
-          }
-        }, 300);
+    const handleResize = () => {
+      // Only proceed if we have a reactFlowInstance and dimensions are known
+      if (reactFlowInstance && containerDimensions.width > 0) {
+        reactFlowInstance.fitView({ padding: 0.2 });
       }
     };
     
-    // Run once on mount
-    checkAndAdjustLayout();
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, [reactFlowInstance, containerDimensions]);
+  
+  // Update the container style to ensure ReactFlow has full height
+  const containerStyle = useMemo(() => ({
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden',
+    display: 'flex',
+    flex: '1 1 auto',
+    minHeight: '300px' // Add minimum height as fallback
+  }), []);
+  
+  useEffect(() => {
+    if (!containerRef.current) return;
     
-    // Also add a resize listener to handle when the view changes
-    window.addEventListener('resize', checkAndAdjustLayout);
+    const updateDimensions = () => {
+      if (!containerRef.current) return;
+      
+      const { width, height } = containerRef.current.getBoundingClientRect();
+      const oldWidth = containerDimensions.width;
+      const oldHeight = containerDimensions.height;
+      
+      console.log(`Container measured: ${width}x${height}`);
+      
+      // Only update if dimensions have changed meaningfully
+      if (Math.abs(width - oldWidth) > 5 || Math.abs(height - oldHeight) > 5 || !isReady) {
+        setContainerDimensions({ width, height });
+        
+        // Only set ready if we have valid dimensions
+        if (width > 100 && height > 100 && !isReady) {
+          console.log(`Container dimensions confirmed: ${width}x${height}`);
+          // Small delay to ensure dimensions are stable
+          setTimeout(() => {
+            setIsReady(true);
+          }, 20);
+        }
+      }
+    };
+    
+    // Run once immediately
+    updateDimensions();
+    
+    // Also listen for resizes
+    const resizeObserver = new ResizeObserver(() => {
+      requestAnimationFrame(updateDimensions);
+    });
+    resizeObserver.observe(containerRef.current);
+    
+    // Also handle window resize events
+    const handleResize = () => {
+      requestAnimationFrame(updateDimensions);
+    };
+    window.addEventListener('resize', handleResize);
     
     return () => {
-      window.removeEventListener('resize', checkAndAdjustLayout);
+      if (containerRef.current) {
+        resizeObserver.unobserve(containerRef.current);
+      }
+      resizeObserver.disconnect();
+      window.removeEventListener('resize', handleResize);
     };
-  }, [reactFlowInstance, nodes.length, selectedLayout]);
+  }, [isReady]); // Only depend on isReady, not containerRef
   
   return (
-    <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
-      <ReactFlow
-        nodes={nodes}
-        edges={edges}
-        onNodesChange={onNodesChangeHandler}
-        onEdgesChange={onEdgesChange}
-        onConnect={handleConnect}
-        onNodeDragStop={handleNodeDragStop}
-        nodeTypes={nodeTypes}
-        defaultEdgeOptions={{ 
-          type: 'default', 
-          animated: true,
-          style: { stroke: '#555', strokeWidth: 2 },
-          markerEnd: { type: 'arrow' }
-        }}
-        fitView
-        fitViewOptions={{ 
-          padding: 0.3,
-          includeHiddenNodes: false,
-          minZoom: 0.5,
-          maxZoom: 1.5
-        }}
-        minZoom={0.1}
-        maxZoom={2}
-        defaultZoom={0.8}
-        nodesDraggable={true}
-        elementsSelectable={true}
-        selectNodesOnDrag={false}
-        translateExtent={viewportBoundary}
-        style={{ width: '100%', height: '100%', background: '#f5f5f5' }}
-        className="react-flow"
-        proOptions={{ hideAttribution: true }}
-      >
-        <Background color="#aaa" gap={16} />
-        <Controls showInteractive={false} />
-        <MiniMap
-          nodeColor={(node) => {
-            if (node.data?.isBibleRef) return '#0ea5e9';
-            return '#10b981';
+    <div 
+      ref={containerRef} 
+      style={containerStyle}
+      className="graph-view-container"
+    >
+      {/* Only render ReactFlow when container dimensions are known */}
+      {isReady && containerDimensions.width > 0 && (
+        <ReactFlow
+          nodes={nodes}
+          edges={edges}
+          onNodesChange={onNodesChangeHandler}
+          onEdgesChange={onEdgesChange}
+          onConnect={handleConnect}
+          onNodeDragStop={handleNodeDragStop}
+          nodeTypes={nodeTypes}
+          defaultEdgeOptions={{ 
+            type: 'default', 
+            animated: true,
+            style: { stroke: '#555', strokeWidth: 2 },
+            markerEnd: { type: 'arrow' }
           }}
+          fitView
+          fitViewOptions={{ 
+            padding: 0.3,
+            includeHiddenNodes: false,
+            minZoom: 0.5,
+            maxZoom: 1.5
+          }}
+          minZoom={0.1}
+          maxZoom={2}
+          defaultViewport={{ x: 0, y: 0, zoom: 0.8 }}
+          nodesDraggable={true}
+          elementsSelectable={true}
+          panOnScroll={true}
+          selectionOnDrag={false}
+          panOnDrag={true}
           style={{
-            width: 240,
-            height: 160,
-            border: '1px solid rgba(0, 0, 0, 0.1)',
-            borderRadius: '4px'
+            position: 'absolute',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            width: '100%',
+            height: '100%',
+            background: '#f5f5f5'
           }}
-          zoomable
-          pannable
-          onClick
-          className="shadow-md bg-white bg-opacity-90"
-          maskColor="rgba(0, 0, 0, 0.1)"
-          nodeStrokeWidth={3}
-        />
-        
-        {/* Viewport boundary visualization */}
-        <Panel position="bottom-right" className="text-xs text-gray-500">
-          {t('graph.boundary', {
-            x1: viewportBoundary[0][0].toFixed(0),
-            y1: viewportBoundary[0][1].toFixed(0),
-            x2: viewportBoundary[1][0].toFixed(0),
-            y2: viewportBoundary[1][1].toFixed(0)
-          })}
-        </Panel>
-        
-        <Panel position="top-left" className="bg-white p-3 rounded shadow">
-          <div className="flex items-center space-x-4 mb-2">
-            <h3 className="text-lg font-bold text-gray-800">{t('graph.title')}</h3>
-            <button 
-              className="px-2 py-1 bg-primary-100 text-primary-700 text-sm rounded-md"
-              onClick={() => setShowTable(!showTable)}
-            >
-              {showTable ? t('graph.hideTable') : t('graph.showTable')}
-            </button>
-          </div>
+          className="react-flow"
+          proOptions={{ hideAttribution: true }}
+          onInit={setReactFlowInstance}
+        >
+          <Background color="#aaa" gap={16} />
+          <Controls />
+          <MiniMap
+            nodeColor={(node) => {
+              if (node.data?.isBibleRef) return '#0ea5e9';
+              return '#10b981';
+            }}
+            style={{
+              width: 120,  // Smaller in split view
+              height: 80,  // Smaller in split view
+              border: '1px solid rgba(0, 0, 0, 0.1)',
+              borderRadius: '4px'
+            }}
+            zoomable
+            pannable
+          />
           
-          <div className="text-sm text-gray-500 mb-3">
-            {nodes.length === 0 ? (
-              t('graph.noNodes')
-            ) : (
-              t('graph.stats', {
-                nodeCount: nodes.filter(n => !n.data.isBibleRef).length,
-                bibleRefCount: nodes.filter(n => n.data.isBibleRef).length,
-                connectionCount: edges.length
-              })
-            )}
-          </div>
-          
-          <div className="border-t pt-2">
-            <div className="text-sm font-medium text-gray-700 mb-1">{t('graph.layout')}:</div>
-            <div className="flex flex-wrap gap-2">
+          {/* Layout control buttons - simplified UI for split view */}
+          <Panel position="top-right" style={{ margin: '10px' }}>
+            <div className="flex gap-1 items-center justify-center bg-white p-2 rounded shadow">
               <button
-                className={`px-2 py-1 text-xs rounded transition-colors duration-200 ${selectedLayout === 'circle' 
-                  ? 'bg-blue-600 text-white font-semibold shadow-sm' 
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                className={`px-2 py-1 text-xs rounded ${selectedLayout === 'circle' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
                 onClick={() => handleLayoutButtonClick('circle')}
               >
-                {t('graph.layoutTypes.circle')}
+                Circle
               </button>
               <button
-                className={`px-2 py-1 text-xs rounded transition-colors duration-200 ${selectedLayout === 'force' 
-                  ? 'bg-blue-600 text-white font-semibold shadow-sm' 
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                className={`px-2 py-1 text-xs rounded ${selectedLayout === 'force' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
                 onClick={() => handleLayoutButtonClick('force')}
               >
-                {t('graph.layoutTypes.force')}
+                Force
               </button>
               <button
-                className={`px-2 py-1 text-xs rounded transition-colors duration-200 ${selectedLayout === 'hierarchical' 
-                  ? 'bg-blue-600 text-white font-semibold shadow-sm' 
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'}`}
+                className={`px-2 py-1 text-xs rounded ${selectedLayout === 'hierarchical' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
                 onClick={() => handleLayoutButtonClick('hierarchical')}
               >
-                {t('graph.layoutTypes.hierarchical')}
-              </button>
-              <button
-                className="px-2 py-1 text-xs rounded bg-teal-100 text-teal-700 hover:bg-teal-200"
-                onClick={() => {
-                  reactFlowInstance.fitView({ padding: 0.2 });
-                }}
-              >
-                {t('graph.actions.fitView')}
-              </button>
-              <button
-                className="px-2 py-1 text-xs rounded bg-purple-100 text-purple-700 hover:bg-purple-200"
-                onClick={calculateBoundaries}
-              >
-                {t('graph.actions.updateBoundary')}
-              </button>
-              <button
-                className="px-2 py-1 text-xs rounded bg-green-100 text-green-700 hover:bg-green-200"
-                onClick={savePositionsToStore}
-              >
-                {t('graph.actions.saveLayout')}
+                Tree
               </button>
             </div>
-          </div>
-        </Panel>
-      </ReactFlow>
+          </Panel>
+        </ReactFlow>
+      )}
       
-      {showTable && (
-        <div className="absolute bottom-0 left-0 right-0 bg-white shadow-lg rounded-t-lg max-h-[50vh] overflow-y-auto">
-          <NodeTable />
-          <div className="p-2 text-right">
-            <button 
-              className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded"
-              onClick={() => setShowTable(false)}
-            >
-              {t('table.close')}
-            </button>
-          </div>
+      {/* Show loading indicator while dimensions are being calculated */}
+      {!isReady && (
+        <div className="absolute inset-0 flex items-center justify-center bg-gray-50">
+          <div className="text-gray-500">Initializing graph...</div>
         </div>
       )}
       
       {isLayoutChanging && (
-        <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50 pointer-events-none transition-opacity duration-300">
-          <div className="bg-white p-4 rounded-lg shadow-lg flex items-center space-x-3 animate-fadeIn">
+        <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50 pointer-events-none">
+          <div className="bg-white p-3 rounded-lg shadow-md flex items-center space-x-2">
             <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span className="text-gray-700 font-medium">
-              {t('graph.applyingLayout', { layout: selectedLayout })}
+            <span className="text-gray-700">
+              Applying layout...
             </span>
           </div>
         </div>
@@ -1155,24 +1088,22 @@ const GraphView = () => {
       
       {deleteConfirmation.isOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50">
-          <div className="bg-white p-5 rounded-lg shadow-lg max-w-md w-full">
-            <h2 className="text-lg font-semibold mb-3">{t('deleteConfirm.title')}</h2>
-            <p className="mb-4">{t('deleteConfirm.message', { title: deleteConfirmation.nodeTitle })}</p>
-            <div className="flex justify-end space-x-3">
+          <div className="bg-white p-4 rounded-lg shadow-lg max-w-sm w-full">
+            <h2 className="text-lg font-semibold mb-2">Delete Node?</h2>
+            <p className="mb-4">Are you sure you want to delete "{deleteConfirmation.nodeTitle}"?</p>
+            <div className="flex justify-end space-x-2">
               <button 
-                className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded text-gray-800"
+                className="px-3 py-1 bg-gray-200 hover:bg-gray-300 rounded"
                 onClick={() => setDeleteConfirmation({ isOpen: false, nodeId: null, nodeTitle: '' })}
               >
-                {t('deleteConfirm.cancel')}
+                Cancel
               </button>
               <button 
-                className="px-4 py-2 bg-red-500 hover:bg-red-600 rounded text-white"
+                className="px-3 py-1 bg-red-500 hover:bg-red-600 rounded text-white"
                 onClick={() => {
                   if (deleteConfirmation.nodeId) {
                     deleteNode(deleteConfirmation.nodeId);
-                    // Update the nodes state to reflect the deletion
                     setNodes(nodes => nodes.filter(node => node.id !== deleteConfirmation.nodeId));
-                    // Update the edges state to remove any connected edges
                     setEdges(edges => edges.filter(
                       edge => edge.source !== deleteConfirmation.nodeId && edge.target !== deleteConfirmation.nodeId
                     ));
@@ -1180,7 +1111,7 @@ const GraphView = () => {
                   setDeleteConfirmation({ isOpen: false, nodeId: null, nodeTitle: '' });
                 }}
               >
-                {t('deleteConfirm.delete')}
+                Delete
               </button>
             </div>
           </div>
@@ -1190,33 +1121,44 @@ const GraphView = () => {
   );
 };
 
-// Optimized wrapper component for split view
+// Modify the GraphViewWithFlow component to use the new containerStyle
 const GraphViewWithFlow = () => {
-  const containerRef = useRef(null);
+  const [mounted, setMounted] = useState(false);
   
+  // Add a pre-initialization step
   useEffect(() => {
-    // Force a resize event after render to ensure ReactFlow updates its dimensions
+    // Small delay to ensure DOM is ready after navigation/tab change
     const timer = setTimeout(() => {
+      setMounted(true);
+      // Force a resize event to ensure all containers update
       window.dispatchEvent(new Event('resize'));
-    }, 100);
+    }, 50);
     
     return () => clearTimeout(timer);
   }, []);
   
+  // Update the wrapper style in GraphViewWithFlow
+  const wrapperStyle = {
+    width: '100%',
+    height: '100%',
+    position: 'absolute',
+    top: 0,
+    left: 0,
+    right: 0,
+    bottom: 0,
+    overflow: 'hidden'
+  };
+  
   return (
     <div 
-      ref={containerRef}
-      style={{
-        width: '100%',
-        height: '100%',
-        overflow: 'hidden'
-      }} 
+      style={wrapperStyle}
+      className="graph-view-wrapper"
     >
-      <ReactFlowProvider>
-        <div style={{ width: '100%', height: '100%', position: 'relative' }}>
+      {mounted && (
+        <ReactFlowProvider>
           <GraphView />
-        </div>
-      </ReactFlowProvider>
+        </ReactFlowProvider>
+      )}
     </div>
   );
 };

@@ -180,64 +180,41 @@ const App = () => {
 
         {/* When in split view, show both Bible Reader and Graph View side by side */}
         {splitView && (
-          <>
-            <div className="w-1/2 border-r" style={{ height: '100%' }}>
-              <BibleReader />
+          <div className="flex h-full" style={{ height: 'calc(100vh - 64px)', width: '100%', position: 'relative' }}>
+            <div className="w-1/2 border-r overflow-auto" style={{ height: '100%' }}>
+              <BibleReader
+                showNodeTable={showNodeTable} 
+                setShowNodeTable={setShowNodeTable}
+              />
             </div>
-            <div className="w-1/2" style={{ height: '100%' }}>
-              <GraphView />
+            <div className="w-1/2" style={{ 
+              height: '100%', 
+              display: 'flex', 
+              flexDirection: 'column',
+              overflow: 'hidden',
+              position: 'relative'
+            }}>
+              <div style={{ 
+                position: 'absolute', 
+                top: 0, 
+                right: 0, 
+                bottom: 0, 
+                left: 0,
+                overflow: 'hidden'
+              }}>
+                <GraphView />
+              </div>
             </div>
-          </>
+          </div>
         )}
         
         {/* Node Table Overlay (shown in both Reader and Split views) */}
         {(activeTab === 'reader' || splitView) && showNodeTable && nodeCount > 0 && (
           <div 
-            className={`absolute transition-all duration-300 left-0 right-0 bg-white shadow-lg rounded-t-lg z-10 node-table-container ${
-              showNodeTable === 'collapsed' ? 'bottom-0 h-12' : 'bottom-0 max-h-[50vh]'
-            }`}
-            style={{ 
-              boxShadow: '0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06)'
-            }}
+            className="absolute bottom-0 left-0 right-0 bg-white shadow-lg rounded-t-lg z-50 max-h-[50vh] overflow-y-auto"
+            style={{ boxShadow: '0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06)' }}
           >
-            {/* Collapse/Expand Toggle Bar */}
-            <div 
-              className="h-12 px-4 flex items-center justify-between bg-gray-50 border-b node-table-header"
-              onClick={() => setShowNodeTable(showNodeTable === 'collapsed' ? true : 'collapsed')}
-            >
-              <h2 className="text-lg font-semibold text-gray-700">
-                {t('tabs.totalNodes')} ({nodeCount})
-              </h2>
-              <div className="flex items-center space-x-2">
-                {showNodeTable !== 'collapsed' && (
-                  <button 
-                    className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowNodeTable(false);
-                    }}
-                  >
-                    {t('table.close')}
-                  </button>
-                )}
-                <svg 
-                  xmlns="http://www.w3.org/2000/svg" 
-                  className={`h-5 w-5 node-table-chevron ${showNodeTable === 'collapsed' ? 'collapsed' : ''}`} 
-                  fill="none" 
-                  viewBox="0 0 24 24" 
-                  stroke="currentColor"
-                >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
-                </svg>
-              </div>
-            </div>
-            
-            {/* Table Content - only rendered when expanded */}
-            {showNodeTable !== 'collapsed' && (
-              <div className="overflow-y-auto" style={{ maxHeight: 'calc(50vh - 48px)' }}>
-                <NodeTable />
-              </div>
-            )}
+            <NodeTable />
           </div>
         )}
       </main>
@@ -245,4 +222,4 @@ const App = () => {
   );
 };
 
-export default App; 
+export default App;

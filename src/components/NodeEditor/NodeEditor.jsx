@@ -1,7 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import useNodeStore from '../../store/useNodeStore';
+import { useTranslation } from 'react-i18next';
 
 const NodeEditor = ({ highlightedText, existingNode, connectToNode, onClose }) => {
+  const { t } = useTranslation();
   const addNode = useNodeStore(state => state.addNode);
   const updateNode = useNodeStore(state => state.updateNode);
   const linkNodes = useNodeStore(state => state.linkNodes);
