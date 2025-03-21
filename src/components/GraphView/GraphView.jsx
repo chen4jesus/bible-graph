@@ -25,12 +25,12 @@ const layoutAlgorithms = {
     const regularNodes = nodes.filter(node => !node.data.isBibleRef);
     const bibleNodes = nodes.filter(node => node.data.isBibleRef);
     
-    // Position Bible nodes in a row at the very top
+    // Position Bible nodes in a row at the very top - use smaller spacing in split view
     const bibleUpdatedNodes = bibleNodes.map((node, index) => {
-      const totalWidth = bibleNodes.length * 120;
+      const totalWidth = bibleNodes.length * 90; // Reduced from 120
       const startX = centerX - totalWidth / 2;
-      const x = startX + index * 120;
-      const y = -400; // Position at the top of the canvas
+      const x = startX + index * 90; // Reduced from 120
+      const y = -200; // Reduced from -400 to fit in smaller view
       
       return {
         ...node,
@@ -43,12 +43,12 @@ const layoutAlgorithms = {
       };
     });
     
-    // Position regular nodes in a circle below the Bible nodes
+    // Position regular nodes in a smaller circle below the Bible nodes
     const regularUpdatedNodes = regularNodes.map((node, index) => {
       const angle = (index / Math.max(1, regularNodes.length)) * 2 * Math.PI;
-      const radius = 250;
+      const radius = 150; // Reduced from 250 for smaller circle
       const x = centerX + radius * Math.cos(angle);
-      const y = centerY + radius * Math.sin(angle) + 100; // Push down a bit
+      const y = centerY + radius * Math.sin(angle) + 50; // Reduced from 100
       
       return {
         ...node,
@@ -71,8 +71,8 @@ const layoutAlgorithms = {
     updatedNodes.forEach(node => {
       if (!node.position) {
         node.position = { 
-          x: Math.random() * 300 - 150, 
-          y: Math.random() * 300 - 150 
+          x: Math.random() * 200 - 100, // Reduced from 300
+          y: Math.random() * 200 - 100  // Reduced from 300
         };
       }
       nodeMap[node.id] = node;
@@ -467,6 +467,7 @@ const GraphView = () => {
   const firstRenderRef = useRef(true);
   const layoutCalculatedRef = useRef(false);
   const [isLayoutChanging, setIsLayoutChanging] = useState(false);
+  const containerRef = useRef(null);
   
   useEffect(() => {
     console.log('GraphView mounted, storeNodes:', storeNodes.length);
@@ -947,8 +948,45 @@ const GraphView = () => {
     };
   }, [isLayoutChanging]);
   
+  // Detect when we're in split view and adjust the graph layout
+  useEffect(() => {
+    // We don't have direct access to the splitView state from App.jsx
+    // but we can check if the container width has changed significantly
+    const checkAndAdjustLayout = () => {
+      const containerWidth = containerRef.current?.clientWidth || 0;
+      
+      // If our container width is less than full screen, we're likely in split view
+      if (containerWidth > 0 && containerWidth < window.innerWidth * 0.8) {
+        console.log('Detected split view, adjusting graph layout');
+        
+        // Give React Flow time to update its internal dimensions
+        setTimeout(() => {
+          // First fit the view to show all nodes
+          if (reactFlowInstance) {
+            reactFlowInstance.fitView({ padding: 0.2 });
+          }
+          
+          // Then apply the layout if we already have nodes
+          if (nodes.length > 0 && !isApplyingLayoutRef.current) {
+            applyLayout(selectedLayout);
+          }
+        }, 300);
+      }
+    };
+    
+    // Run once on mount
+    checkAndAdjustLayout();
+    
+    // Also add a resize listener to handle when the view changes
+    window.addEventListener('resize', checkAndAdjustLayout);
+    
+    return () => {
+      window.removeEventListener('resize', checkAndAdjustLayout);
+    };
+  }, [reactFlowInstance, nodes.length, selectedLayout]);
+  
   return (
-    <div style={{ width: '100%', height: '100%' }}>
+    <div ref={containerRef} style={{ width: '100%', height: '100%' }}>
       <ReactFlow
         nodes={nodes}
         edges={edges}
@@ -1152,7 +1190,7 @@ const GraphView = () => {
   );
 };
 
-// Completely rewritten wrapper component
+// Optimized wrapper component for split view
 const GraphViewWithFlow = () => {
   const containerRef = useRef(null);
   
@@ -1169,13 +1207,8 @@ const GraphViewWithFlow = () => {
     <div 
       ref={containerRef}
       style={{
-        width: '100vw',
-        height: 'calc(100vh - 64px)', 
-        //position: 'absolute',
-        top: 0,
-        left: 0,
-        right: 0,
-        bottom: 0,
+        width: '100%',
+        height: '100%',
         overflow: 'hidden'
       }} 
     >

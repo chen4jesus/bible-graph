@@ -1,9 +1,11 @@
 import React, { useState } from 'react';
 import useNodeStore from '../../store/useNodeStore';
 import useBibleStore from '../../store/useBibleStore';
+import { useTranslation } from 'react-i18next';
 import NodeEditor from './NodeEditor';
 
 const NodeTable = () => {
+  const { t } = useTranslation();
   const nodes = useNodeStore(state => state.nodes.filter(node => !node.data.isBibleRef));
   const setCurrentLocation = useBibleStore(state => state.setCurrentLocation);
   const [nodeToEdit, setNodeToEdit] = useState(null);
@@ -35,27 +37,27 @@ const NodeTable = () => {
   return (
     <>
       <div className="overflow-x-auto">
-        <h2 className="text-xl font-bold mb-4 px-4">Knowledge Nodes ({nodes.length})</h2>
+        <h2 className="text-xl font-bold mb-4 px-4">{t('tabs.userNodes')} ({nodes.length})</h2>
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Title
+                {t('node.title')}
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Created At
+                {t('node.createdAt')}
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Bible Reference
+                {t('node.bibleRef')}
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Description
+                {t('node.description')}
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Connections
+                {t('node.connections')}
               </th>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Actions
+                {t('node.action')}
               </th>
             </tr>
           </thead>

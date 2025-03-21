@@ -10,10 +10,14 @@
     "bibleReader": "圣经阅读器",
     "knowledgeGraph": "知识图谱"
   },
+  "tabs": {
+    "totalNodes": "所有节点",
+    "userNodes": "用户创建节点"
+  },
   "graph": {
     "title": "知识图谱",
-    "showTable": "显示表格",
-    "hideTable": "隐藏表格",
+    "showTable": "显示知识节点",
+    "hideTable": "隐藏知识节点",
     "noNodes": "尚未创建节点。通过高亮圣经文本添加节点。",
     "stats": "{{nodeCount}} 个节点, {{bibleRefCount}} 个圣经引用, {{connectionCount}} 个连接",
     "layout": "布局：",
@@ -38,7 +42,12 @@
       "createConnected": "创建连接节点",
       "edit": "编辑节点",
       "delete": "删除节点"
-    }
+    },
+    "title": "标题",
+    "createdAt": "创建时间",
+    "bibleRef": "圣经引用",
+    "description": "详细描述",
+    "action": "操作"
   },
   "deleteConfirm": {
     "title": "确认删除",

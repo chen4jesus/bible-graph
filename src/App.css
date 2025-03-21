@@ -11,13 +11,24 @@
 }
 
 /* Split view styles */
-.w-1/2 {
+.w-1\/2 {
   width: 50%;
   height: 100%;
 }
 
 .border-r {
   border-right: 1px solid #e5e7eb; /* Gray-200 */
+}
+
+/* React Flow split view optimizations */
+.react-flow__container {
+  width: 100%;
+  height: 100%;
+}
+
+.react-flow {
+  width: 100%;
+  height: 100%;
 }
 
 /* Custom scrollbar styles */
@@ -121,6 +132,18 @@
   max-height: calc(100vh - 300px);
   overflow-y: auto;
   padding-right: 10px;
+}
+
+.bible-scroll-container {
+  font-size: 1.125rem;
+  line-height: 1.75;
+  padding-right: 16px;
+  margin-right: -8px;
+  overflow-y: auto;
+  overflow-x: hidden;
+  scrollbar-width: thin;
+  scrollbar-color: #888 #f1f1f1;
+  height: 100%;
 }
 
 /* Node table collapsible styling */

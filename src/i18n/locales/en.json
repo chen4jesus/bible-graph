@@ -10,10 +10,14 @@
     "bibleReader": "Bible Reader",
     "knowledgeGraph": "Knowledge Graph"
   },
+  "tabs": {
+    "totalNodes": "All Nodes",
+    "userNodes": "User Created Nodes"
+  },
   "graph": {
     "title": "Knowledge Graph",
-    "showTable": "Show Table",
-    "hideTable": "Hide Table",
+    "showTable": "Show Knowledge Nodes",
+    "hideTable": "Hide Knowledge Nodes",
     "noNodes": "No nodes created yet. Add nodes by highlighting Bible text.",
     "stats": "{{nodeCount}} nodes, {{bibleRefCount}} Bible references, {{connectionCount}} connections",
     "layout": "Layout:",
@@ -38,7 +42,12 @@
       "createConnected": "Create connected node",
       "edit": "Edit node",
       "delete": "Delete node"
-    }
+    },
+    "title": "Title",
+    "createdAt": "Created At",
+    "bibleRef": "Bible Reference",
+    "description": "Description",
+    "action": "Action"
   },
   "deleteConfirm": {
     "title": "Confirm Deletion",

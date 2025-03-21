@@ -206,7 +206,7 @@ const App = () => {
               onClick={() => setShowNodeTable(showNodeTable === 'collapsed' ? true : 'collapsed')}
             >
               <h2 className="text-lg font-semibold text-gray-700">
-                Knowledge Nodes ({nodeCount})
+                {t('tabs.totalNodes')} ({nodeCount})
               </h2>
               <div className="flex items-center space-x-2">
                 {showNodeTable !== 'collapsed' && (
