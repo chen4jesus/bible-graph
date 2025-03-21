@@ -112,7 +112,7 @@ const NodeEditor = ({ highlightedText, existingNode, connectToNode, onClose }) =
         {isEditMode && existingNode.data.bibleReference && (
           <div className="mb-4 p-3 bg-gray-50 rounded border-l-4 border-primary-500 text-sm text-gray-700">
             <div className="text-xs font-semibold mt-1 text-primary-600">
-              Bible Reference: {existingNode.data.bibleReference}
+              {t('node.bibleRef')}: {existingNode.data.bibleReference}
             </div>
           </div>
         )}
@@ -130,7 +130,7 @@ const NodeEditor = ({ highlightedText, existingNode, connectToNode, onClose }) =
         <form onSubmit={handleSubmit}>
           <div className="mb-4">
             <label htmlFor="title" className="block text-sm font-medium text-gray-700 mb-1">
-              Title
+              {t('node.title')}
             </label>
             <input
               id="title"
@@ -145,7 +145,7 @@ const NodeEditor = ({ highlightedText, existingNode, connectToNode, onClose }) =
           
           <div className="mb-4">
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              Description
+              {t('node.description')}
             </label>
             <textarea
               id="description"
@@ -162,13 +162,13 @@ const NodeEditor = ({ highlightedText, existingNode, connectToNode, onClose }) =
               className="px-4 py-2 border border-gray-300 rounded bg-white text-gray-700 hover:bg-gray-50"
               onClick={onClose}
             >
-              Cancel
+              {t('editConfirm.cancel')}
             </button>
             <button
               type="submit"
               className="px-4 py-2 bg-primary-600 text-white rounded hover:bg-primary-700"
             >
-              {isEditMode ? 'Save Changes' : 'Create Node'}
+              {isEditMode ? t('editConfirm.save') : t('editConfirm.add')}
             </button>
           </div>
         </form>

@@ -18,6 +18,7 @@
     "title": "Knowledge Graph",
     "showTable": "Show Knowledge Nodes",
     "hideTable": "Hide Knowledge Nodes",
+    "noKnowledge": "No knowledge nodes have been created yet. Highlight text in the Bible reader to create nodes.",
     "noNodes": "No nodes created yet. Add nodes by highlighting Bible text.",
     "stats": "{{nodeCount}} nodes, {{bibleRefCount}} Bible references, {{connectionCount}} connections",
     "layout": "Layout:",
@@ -54,6 +55,13 @@
     "message": "Are you sure you want to delete \"{{title}}\"?",
     "cancel": "Cancel",
     "delete": "Delete"
+  },
+  "editConfirm": {
+    "title": "确认保存",
+    "message": "确定要保存 \"{{title}}\" 吗？",
+    "cancel": "取消",
+    "save": "保存",
+    "add": "新增"
   },
   "table": {
     "close": "Close"

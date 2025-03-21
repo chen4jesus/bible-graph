@@ -29,7 +29,7 @@ const NodeTable = () => {
   if (nodes.length === 0) {
     return (
       <div className="p-4 text-center">
-        <p className="text-gray-500">No knowledge nodes have been created yet. Highlight text in the Bible reader to create nodes.</p>
+        <p className="text-gray-500">{t('graph.noKnowledge')}</p>
       </div>
     );
   }

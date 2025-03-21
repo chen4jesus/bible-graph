@@ -4,7 +4,7 @@
   "hintDesc": "选择文字创建知识节点，创建的节点将会现实在知识图谱页面。",
   "bible": {
     "bookLabel": "书卷",
-    "chapterLabel": "章节"
+    "chapterLabel": "章"
   },
   "nav": {
     "bibleReader": "圣经阅读器",
@@ -19,6 +19,7 @@
     "showTable": "显示知识节点",
     "hideTable": "隐藏知识节点",
     "noNodes": "尚未创建节点。通过高亮圣经文本添加节点。",
+    "noKnowledge": "暂时不能生成知识图谱。通过高亮圣经文本添加节点。",
     "stats": "{{nodeCount}} 个节点, {{bibleRefCount}} 个圣经引用, {{connectionCount}} 个连接",
     "layout": "布局：",
     "layoutTypes": {
@@ -54,6 +55,13 @@
     "message": "确定要删除 \"{{title}}\" 吗？",
     "cancel": "取消",
     "delete": "删除"
+  },
+  "editConfirm": {
+    "title": "确认保存",
+    "message": "确定要保存 \"{{title}}\" 吗？",
+    "cancel": "取消",
+    "save": "保存",
+    "add": "新增"
   },
   "table": {
     "close": "关闭"

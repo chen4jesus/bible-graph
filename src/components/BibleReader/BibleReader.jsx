@@ -144,7 +144,7 @@ const BibleReader = () => {
       {/* Bible Text */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold mb-2 text-center">{bookName}</h1>
-        <h2 className="text-xl font-semibold mb-6 text-center">Chapter {currentChapter}</h2>
+        <h2 className="text-xl font-semibold mb-6 text-center">{t('bible.chapterLabel')} {currentChapter}</h2>
         
         <div 
           className="leading-relaxed text-lg bible-text-container"

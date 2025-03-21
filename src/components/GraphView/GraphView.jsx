@@ -19,440 +19,6 @@ import useNodeStore from '../../store/useNodeStore';
 import KnowledgeNode from './KnowledgeNode';
 import NodeTable from '../NodeEditor/NodeTable';
 
-// Layout algorithms for positioning nodes
-const layoutAlgorithms = {
-  circle: (nodes, centerX = 0, centerY = 0) => {
-    const regularNodes = nodes.filter(node => !node.data.isBibleRef);
-    const bibleNodes = nodes.filter(node => node.data.isBibleRef);
-    
-    // Position Bible nodes in a row at the very top - use smaller spacing in split view
-    const bibleUpdatedNodes = bibleNodes.map((node, index) => {
-      const totalWidth = bibleNodes.length * 90; // Reduced from 120
-      const startX = centerX - totalWidth / 2;
-      const x = startX + index * 90; // Reduced from 120
-      const y = -200; // Reduced from -400 to fit in smaller view
-      
-      return {
-        ...node,
-        position: { x, y },
-        style: { 
-          ...node.style,
-          background: '#e9f5fe',
-          borderColor: '#0ea5e9',
-        }
-      };
-    });
-    
-    // Position regular nodes in a smaller circle below the Bible nodes
-    const regularUpdatedNodes = regularNodes.map((node, index) => {
-      const angle = (index / Math.max(1, regularNodes.length)) * 2 * Math.PI;
-      const radius = 150; // Reduced from 250 for smaller circle
-      const x = centerX + radius * Math.cos(angle);
-      const y = centerY + radius * Math.sin(angle) + 50; // Reduced from 100
-      
-      return {
-        ...node,
-        position: { x, y },
-        style: { ...node.style }
-      };
-    });
-    
-    return [...regularUpdatedNodes, ...bibleUpdatedNodes];
-  },
-  
-  force: (nodes, edges, iterations = 80) => {
-    // Simple force-directed layout
-    const nodeMap = {};
-    const updatedNodes = [...nodes];
-    const bibleNodes = nodes.filter(node => node.data.isBibleRef);
-    const regularNodes = nodes.filter(node => !node.data.isBibleRef);
-    
-    // Initialize node positions with tighter clustering
-    updatedNodes.forEach(node => {
-      if (!node.position) {
-        node.position = { 
-          x: Math.random() * 200 - 100, // Reduced from 300
-          y: Math.random() * 200 - 100  // Reduced from 300
-        };
-      }
-      nodeMap[node.id] = node;
-    });
-    
-    // Function to detect edge crossings
-    const detectCrossings = (edges, nodeMap) => {
-      let crossings = 0;
-      
-      // Check each pair of edges
-      for (let i = 0; i < edges.length; i++) {
-        for (let j = i + 1; j < edges.length; j++) {
-          const edge1 = edges[i];
-          const edge2 = edges[j];
-          
-          // Skip if edges share a node (they can't cross)
-          if (edge1.source === edge2.source || 
-              edge1.source === edge2.target || 
-              edge1.target === edge2.source || 
-              edge1.target === edge2.target) {
-            continue;
-          }
-          
-          const source1 = nodeMap[edge1.source];
-          const target1 = nodeMap[edge1.target];
-          const source2 = nodeMap[edge2.source];
-          const target2 = nodeMap[edge2.target];
-          
-          // Skip if any node doesn't exist
-          if (!source1 || !target1 || !source2 || !target2) {
-            continue;
-          }
-          
-          // Line segments defined by their endpoints
-          const x1 = source1.position.x;
-          const y1 = source1.position.y;
-          const x2 = target1.position.x;
-          const y2 = target1.position.y;
-          const x3 = source2.position.x;
-          const y3 = source2.position.y;
-          const x4 = target2.position.x;
-          const y4 = target2.position.y;
-          
-          // Check if the two line segments intersect
-          // Using line-line intersection formula
-          const denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
-          
-          // If lines are parallel, they don't intersect
-          if (denominator === 0) {
-            continue;
-          }
-          
-          const ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator;
-          const ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator;
-          
-          // If intersection point is within both line segments
-          if (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1) {
-            crossings++;
-          }
-        }
-      }
-      
-      return crossings;
-    };
-    
-    // Track the best layout with minimum crossings
-    let bestCrossings = Infinity;
-    let bestPositions = {}; 
-    
-    // Perform iterations of force-directed algorithm for regular nodes only
-    for (let i = 0; i < iterations; i++) {
-      // Calculate damping factor that decreases with iterations
-      const dampingFactor = 1 - (i / iterations) * 0.5;
-      
-      // Repulsive forces between regular nodes
-      for (let j = 0; j < regularNodes.length; j++) {
-        for (let k = j + 1; k < regularNodes.length; k++) {
-          const node1 = regularNodes[j];
-          const node2 = regularNodes[k];
-          
-          const dx = node2.position.x - node1.position.x;
-          const dy = node2.position.y - node1.position.y;
-          const distance = Math.sqrt(dx * dx + dy * dy) || 1;
-          
-          // Weaker repulsion for a more compact layout
-          const repulsionStrength = 3000 / Math.max(distance, 100) * dampingFactor;
-          const repulsionFactor = 0.6;
-          
-          const fx = (dx / distance) * repulsionStrength * repulsionFactor;
-          const fy = (dy / distance) * repulsionStrength * repulsionFactor;
-          
-          node2.position.x += fx;
-          node2.position.y += fy;
-          node1.position.x -= fx;
-          node1.position.y -= fy;
-        }
-      }
-      
-      // Attractive forces along edges for regular nodes
-      edges.forEach(edge => {
-        const source = nodeMap[edge.source];
-        const target = nodeMap[edge.target];
-        
-        // Skip if either node is a Bible node
-        if (!source || !target || source.data.isBibleRef || target.data.isBibleRef) {
-          return;
-        }
-        
-        const dx = target.position.x - source.position.x;
-        const dy = target.position.y - source.position.y;
-        const distance = Math.sqrt(dx * dx + dy * dy) || 1;
-        
-        // Stronger attraction to pull connected nodes closer
-        // Use higher attraction to reduce edge crossings
-        const attractionStrength = Math.min(0.2 * distance, 40);
-        
-        const fx = (dx / distance) * attractionStrength;
-        const fy = (dy / distance) * attractionStrength;
-        
-        source.position.x += fx * dampingFactor;
-        source.position.y += fy * dampingFactor;
-        target.position.x -= fx * dampingFactor;
-        target.position.y -= fy * dampingFactor;
-      });
-      
-      // Move all regular nodes down to ensure space for Bible nodes at top
-      if (i === 0) {
-        regularNodes.forEach(node => {
-          node.position.y += 200;
-        });
-      }
-      
-      // Every 10 iterations, check for crossings and save best layout
-      if (i > 0 && i % 10 === 0) {
-        const currentCrossings = detectCrossings(edges, nodeMap);
-        
-        // If this layout has fewer crossings, save it
-        if (currentCrossings < bestCrossings) {
-          bestCrossings = currentCrossings;
-          bestPositions = {};
-          regularNodes.forEach(node => {
-            bestPositions[node.id] = { ...node.position };
-          });
-        }
-      }
-
-      // On the final iteration, apply edge crossing penalties
-      if (i === iterations - 1 && Object.keys(bestPositions).length > 0) {
-        // Use the layout with minimum crossings
-        regularNodes.forEach(node => {
-          if (bestPositions[node.id]) {
-            node.position = bestPositions[node.id];
-          }
-        });
-      }
-    }
-    
-    // Position Bible nodes in a row at the top
-    if (bibleNodes.length > 0) {
-      const totalWidth = bibleNodes.length * 150;
-      const center = regularNodes.reduce((sum, node) => sum + node.position.x, 0) / Math.max(1, regularNodes.length);
-      const startX = center - totalWidth / 2;
-      
-      bibleNodes.forEach((node, index) => {
-        node.position = {
-          x: startX + index * 150,
-          y: -300 // Fixed position at the top
-        };
-      });
-    }
-    
-    // Final pass - constrain any outliers to reasonable bounds
-    const maxDistance = 500;
-    regularNodes.forEach(node => {
-      const distance = Math.sqrt(node.position.x * node.position.x + node.position.y * node.position.y);
-      if (distance > maxDistance) {
-        const scale = maxDistance / distance;
-        node.position.x *= scale;
-        node.position.y *= scale;
-        // Ensure we don't push up into Bible node territory
-        node.position.y = Math.max(node.position.y, 0);
-      }
-    });
-    
-    // Add styling for Bible nodes
-    return updatedNodes.map(node => ({
-      ...node,
-      style: node.data.isBibleRef ? {
-        ...node.style,
-        background: '#e9f5fe',
-        borderColor: '#0ea5e9',
-      } : node.style
-    }));
-  },
-  
-  hierarchical: (nodes, edges) => {
-    const rootNodes = [];
-    const nodeMap = {};
-    const levels = {};
-    const bibleRefs = [];
-    const nonBibleNodes = [];
-    
-    // First pass: separate Bible nodes and non-Bible nodes
-    nodes.forEach(node => {
-      if (node.data.isBibleRef) {
-        bibleRefs.push(node.id);
-        levels[node.id] = -1; // Bible nodes at level -1 (above everything)
-        rootNodes.push(node.id);
-      } else {
-        nonBibleNodes.push(node.id);
-      }
-      
-      nodeMap[node.id] = { ...node, children: [], parents: [] };
-    });
-    
-    // No Bible nodes? Set first non-Bible node as root
-    if (bibleRefs.length === 0 && nonBibleNodes.length > 0) {
-      const firstNodeId = nonBibleNodes[0];
-      levels[firstNodeId] = 0;
-      rootNodes.push(firstNodeId);
-    }
-    
-    // Build the hierarchy based on edges, tracking both parent and child relationships
-    edges.forEach(edge => {
-      if (nodeMap[edge.source] && nodeMap[edge.target]) {
-        nodeMap[edge.source].children.push(edge.target);
-        nodeMap[edge.target].parents.push(edge.source);
-      }
-    });
-    
-    // Second pass: ensure non-Bible nodes without incoming edges 
-    // connect to level 0 (below Bible nodes)
-    nonBibleNodes.forEach(nodeId => {
-      const hasIncoming = edges.some(edge => edge.target === nodeId);
-      
-      // If no incoming edges and level not set yet
-      if (!hasIncoming && levels[nodeId] === undefined) {
-        // Start at level 0 (below Bible nodes at -1)
-        levels[nodeId] = 0;
-        
-        // Not a direct child of any node, but we place it at level 0
-        if (!rootNodes.includes(nodeId)) {
-          rootNodes.push(nodeId);
-        }
-      }
-    });
-    
-    // Assign levels to all remaining nodes through BFS
-    const queue = [...rootNodes];
-    while (queue.length > 0) {
-      const nodeId = queue.shift();
-      const node = nodeMap[nodeId];
-      const currentLevel = levels[nodeId];
-      
-      node.children.forEach(childId => {
-        // Skip if child is a Bible node (they stay at level -1)
-        if (nodeMap[childId].data.isBibleRef) return;
-        
-        // Ensure child level is at least one below parent
-        const minLevel = currentLevel + 1;
-        
-        if (levels[childId] === undefined || levels[childId] < minLevel) {
-          levels[childId] = minLevel;
-          queue.push(childId);
-        }
-      });
-    }
-    
-    // Position nodes based on their levels
-    const levelCounts = {};
-    const updatedNodes = [];
-    
-    // Calculate how many nodes per level
-    Object.keys(levels).forEach(nodeId => {
-      const level = levels[nodeId];
-      levelCounts[level] = (levelCounts[level] || 0) + 1;
-    });
-    
-    // Create a nodes-by-level mapping to aid in edge crossing reduction
-    const nodesByLevel = {};
-    Object.keys(levels).forEach(nodeId => {
-      const level = levels[nodeId];
-      if (!nodesByLevel[level]) {
-        nodesByLevel[level] = [];
-      }
-      nodesByLevel[level].push(nodeId);
-    });
-    
-    // Order nodes within each level to reduce edge crossings
-    // This is a simplified barycenter algorithm
-    Object.keys(nodesByLevel).forEach(level => {
-      // Skip the Bible nodes at level -1 - they're handled separately
-      if (parseInt(level) === -1) return;
-      
-      const nodesAtLevel = nodesByLevel[level];
-      
-      // For each node at this level, calculate average position of its parents
-      const nodePositions = nodesAtLevel.map(nodeId => {
-        const node = nodeMap[nodeId];
-        let avgPosition = nodesAtLevel.length / 2; // default middle position
-        
-        // If node has parents, get their average position in the previous level
-        if (node.parents.length > 0) {
-          let sum = 0;
-          let count = 0;
-          
-          node.parents.forEach(parentId => {
-            // Find parent's position in its level
-            if (levels[parentId] !== undefined) {
-              const parentLevel = nodesByLevel[levels[parentId]];
-              if (parentLevel) {
-                const parentPos = parentLevel.indexOf(parentId);
-                if (parentPos !== -1) {
-                  sum += parentPos;
-                  count++;
-                }
-              }
-            }
-          });
-          
-          // Calculate average if there are positioned parents
-          if (count > 0) {
-            avgPosition = sum / count;
-          }
-        }
-        
-        return { id: nodeId, position: avgPosition };
-      });
-      
-      // Sort nodes by average parent position
-      nodePositions.sort((a, b) => a.position - b.position);
-      
-      // Re-assign the ordered nodes to this level
-      nodesByLevel[level] = nodePositions.map(n => n.id);
-    });
-    
-    // Track position within each level
-    const levelPositions = {};
-    
-    // Function to get x-coordinate based on level position
-    const getXPosition = (level, position, totalInLevel) => {
-      // Bible nodes get special treatment - wider spacing
-      const xSpacing = 250;
-      
-      // X position depends on position in level and total nodes in level
-      return position * xSpacing - ((totalInLevel - 1) * xSpacing / 2);
-    };
-    
-    // Position each node based on its level and optimized position
-    Object.keys(nodesByLevel).forEach(level => {
-      const nodesAtThisLevel = nodesByLevel[level];
-      const totalInLevel = nodesAtThisLevel.length;
-      
-      nodesAtThisLevel.forEach((nodeId, position) => {
-        const node = nodeMap[nodeId];
-        const ySpacing = 150;
-        
-        // Y position is determined by level (level -1 at top for Bible nodes)
-        const y = parseInt(level) * ySpacing;
-        
-        // X position is optimized to reduce crossings
-        const x = getXPosition(level, position, totalInLevel);
-        
-        // Style Bible nodes differently
-        updatedNodes.push({
-          ...node,
-          position: { x, y },
-          style: node.data.isBibleRef ? {
-            ...node.style,
-            background: '#e9f5fe',
-            borderColor: '#0ea5e9',
-          } : node.style
-        });
-      });
-    });
-    
-    return updatedNodes;
-  }
-};
-
 const GraphView = () => {
   const { t } = useTranslation();
   const storeNodes = useNodeStore(state => state.nodes);
@@ -581,6 +147,440 @@ const GraphView = () => {
       calculateBoundaries();
     }
   }, [nodes, calculateBoundaries, isReady]);
+  
+  // Define layoutAlgorithms inside the component
+  const layoutAlgorithms = useMemo(() => ({
+    circle: (nodes, centerX = 0, centerY = 0) => {
+      const regularNodes = nodes.filter(node => !node.data.isBibleRef);
+      const bibleNodes = nodes.filter(node => node.data.isBibleRef);
+      
+      // Position Bible nodes in a row at the very top - use smaller spacing in split view
+      const bibleUpdatedNodes = bibleNodes.map((node, index) => {
+        const totalWidth = bibleNodes.length * 90; // Reduced from 120
+        const startX = centerX - totalWidth / 2;
+        const x = startX + index * 90; // Reduced from 120
+        const y = -200; // Reduced from -400 to fit in smaller view
+        
+        return {
+          ...node,
+          position: { x, y },
+          style: { 
+            ...node.style,
+            background: '#e9f5fe',
+            borderColor: '#0ea5e9',
+          }
+        };
+      });
+      
+      // Position regular nodes in a smaller circle below the Bible nodes
+      const regularUpdatedNodes = regularNodes.map((node, index) => {
+        const angle = (index / Math.max(1, regularNodes.length)) * 2 * Math.PI;
+        const radius = 150; // Reduced from 250 for smaller circle
+        const x = centerX + radius * Math.cos(angle);
+        const y = centerY + radius * Math.sin(angle) + 50; // Reduced from 100
+        
+        return {
+          ...node,
+          position: { x, y },
+          style: { ...node.style }
+        };
+      });
+      
+      return [...regularUpdatedNodes, ...bibleUpdatedNodes];
+    },
+    
+    force: (nodes, edges, iterations = 80) => {
+      // Simple force-directed layout
+      const nodeMap = {};
+      const updatedNodes = [...nodes];
+      const bibleNodes = nodes.filter(node => node.data.isBibleRef);
+      const regularNodes = nodes.filter(node => !node.data.isBibleRef);
+      
+      // Initialize node positions with tighter clustering
+      updatedNodes.forEach(node => {
+        if (!node.position) {
+          node.position = { 
+            x: Math.random() * 200 - 100, // Reduced from 300
+            y: Math.random() * 200 - 100  // Reduced from 300
+          };
+        }
+        nodeMap[node.id] = node;
+      });
+      
+      // Function to detect edge crossings
+      const detectCrossings = (edges, nodeMap) => {
+        let crossings = 0;
+        
+        // Check each pair of edges
+        for (let i = 0; i < edges.length; i++) {
+          for (let j = i + 1; j < edges.length; j++) {
+            const edge1 = edges[i];
+            const edge2 = edges[j];
+            
+            // Skip if edges share a node (they can't cross)
+            if (edge1.source === edge2.source || 
+                edge1.source === edge2.target || 
+                edge1.target === edge2.source || 
+                edge1.target === edge2.target) {
+              continue;
+            }
+            
+            const source1 = nodeMap[edge1.source];
+            const target1 = nodeMap[edge1.target];
+            const source2 = nodeMap[edge2.source];
+            const target2 = nodeMap[edge2.target];
+            
+            // Skip if any node doesn't exist
+            if (!source1 || !target1 || !source2 || !target2) {
+              continue;
+            }
+            
+            // Line segments defined by their endpoints
+            const x1 = source1.position.x;
+            const y1 = source1.position.y;
+            const x2 = target1.position.x;
+            const y2 = target1.position.y;
+            const x3 = source2.position.x;
+            const y3 = source2.position.y;
+            const x4 = target2.position.x;
+            const y4 = target2.position.y;
+            
+            // Check if the two line segments intersect
+            // Using line-line intersection formula
+            const denominator = (y4 - y3) * (x2 - x1) - (x4 - x3) * (y2 - y1);
+            
+            // If lines are parallel, they don't intersect
+            if (denominator === 0) {
+              continue;
+            }
+            
+            const ua = ((x4 - x3) * (y1 - y3) - (y4 - y3) * (x1 - x3)) / denominator;
+            const ub = ((x2 - x1) * (y1 - y3) - (y2 - y1) * (x1 - x3)) / denominator;
+            
+            // If intersection point is within both line segments
+            if (ua >= 0 && ua <= 1 && ub >= 0 && ub <= 1) {
+              crossings++;
+            }
+          }
+        }
+        
+        return crossings;
+      };
+      
+      // Track the best layout with minimum crossings
+      let bestCrossings = Infinity;
+      let bestPositions = {}; 
+      
+      // Perform iterations of force-directed algorithm for regular nodes only
+      for (let i = 0; i < iterations; i++) {
+        // Calculate damping factor that decreases with iterations
+        const dampingFactor = 1 - (i / iterations) * 0.5;
+        
+        // Repulsive forces between regular nodes
+        for (let j = 0; j < regularNodes.length; j++) {
+          for (let k = j + 1; k < regularNodes.length; k++) {
+            const node1 = regularNodes[j];
+            const node2 = regularNodes[k];
+            
+            const dx = node2.position.x - node1.position.x;
+            const dy = node2.position.y - node1.position.y;
+            const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+            
+            // Weaker repulsion for a more compact layout
+            const repulsionStrength = 3000 / Math.max(distance, 100) * dampingFactor;
+            const repulsionFactor = 0.6;
+            
+            const fx = (dx / distance) * repulsionStrength * repulsionFactor;
+            const fy = (dy / distance) * repulsionStrength * repulsionFactor;
+            
+            node2.position.x += fx;
+            node2.position.y += fy;
+            node1.position.x -= fx;
+            node1.position.y -= fy;
+          }
+        }
+        
+        // Attractive forces along edges for regular nodes
+        edges.forEach(edge => {
+          const source = nodeMap[edge.source];
+          const target = nodeMap[edge.target];
+          
+          // Skip if either node is a Bible node
+          if (!source || !target || source.data.isBibleRef || target.data.isBibleRef) {
+            return;
+          }
+          
+          const dx = target.position.x - source.position.x;
+          const dy = target.position.y - source.position.y;
+          const distance = Math.sqrt(dx * dx + dy * dy) || 1;
+          
+          // Stronger attraction to pull connected nodes closer
+          // Use higher attraction to reduce edge crossings
+          const attractionStrength = Math.min(0.2 * distance, 40);
+          
+          const fx = (dx / distance) * attractionStrength;
+          const fy = (dy / distance) * attractionStrength;
+          
+          source.position.x += fx * dampingFactor;
+          source.position.y += fy * dampingFactor;
+          target.position.x -= fx * dampingFactor;
+          target.position.y -= fy * dampingFactor;
+        });
+        
+        // Move all regular nodes down to ensure space for Bible nodes at top
+        if (i === 0) {
+          regularNodes.forEach(node => {
+            node.position.y += 200;
+          });
+        }
+        
+        // Every 10 iterations, check for crossings and save best layout
+        if (i > 0 && i % 10 === 0) {
+          const currentCrossings = detectCrossings(edges, nodeMap);
+          
+          // If this layout has fewer crossings, save it
+          if (currentCrossings < bestCrossings) {
+            bestCrossings = currentCrossings;
+            bestPositions = {};
+            regularNodes.forEach(node => {
+              bestPositions[node.id] = { ...node.position };
+            });
+          }
+        }
+
+        // On the final iteration, apply edge crossing penalties
+        if (i === iterations - 1 && Object.keys(bestPositions).length > 0) {
+          // Use the layout with minimum crossings
+          regularNodes.forEach(node => {
+            if (bestPositions[node.id]) {
+              node.position = bestPositions[node.id];
+            }
+          });
+        }
+      }
+      
+      // Position Bible nodes in a row at the top
+      if (bibleNodes.length > 0) {
+        const totalWidth = bibleNodes.length * 150;
+        const center = regularNodes.reduce((sum, node) => sum + node.position.x, 0) / Math.max(1, regularNodes.length);
+        const startX = center - totalWidth / 2;
+        
+        bibleNodes.forEach((node, index) => {
+          node.position = {
+            x: startX + index * 150,
+            y: -300 // Fixed position at the top
+          };
+        });
+      }
+      
+      // Final pass - constrain any outliers to reasonable bounds
+      const maxDistance = 500;
+      regularNodes.forEach(node => {
+        const distance = Math.sqrt(node.position.x * node.position.x + node.position.y * node.position.y);
+        if (distance > maxDistance) {
+          const scale = maxDistance / distance;
+          node.position.x *= scale;
+          node.position.y *= scale;
+          // Ensure we don't push up into Bible node territory
+          node.position.y = Math.max(node.position.y, 0);
+        }
+      });
+      
+      // Add styling for Bible nodes
+      return updatedNodes.map(node => ({
+        ...node,
+        style: node.data.isBibleRef ? {
+          ...node.style,
+          background: '#e9f5fe',
+          borderColor: '#0ea5e9',
+        } : node.style
+      }));
+    },
+    
+    hierarchical: (nodes, edges) => {
+      const rootNodes = [];
+      const nodeMap = {};
+      const levels = {};
+      const bibleRefs = [];
+      const nonBibleNodes = [];
+      
+      // First pass: separate Bible nodes and non-Bible nodes
+      nodes.forEach(node => {
+        if (node.data.isBibleRef) {
+          bibleRefs.push(node.id);
+          levels[node.id] = -1; // Bible nodes at level -1 (above everything)
+          rootNodes.push(node.id);
+        } else {
+          nonBibleNodes.push(node.id);
+        }
+        
+        nodeMap[node.id] = { ...node, children: [], parents: [] };
+      });
+      
+      // No Bible nodes? Set first non-Bible node as root
+      if (bibleRefs.length === 0 && nonBibleNodes.length > 0) {
+        const firstNodeId = nonBibleNodes[0];
+        levels[firstNodeId] = 0;
+        rootNodes.push(firstNodeId);
+      }
+      
+      // Build the hierarchy based on edges, tracking both parent and child relationships
+      edges.forEach(edge => {
+        if (nodeMap[edge.source] && nodeMap[edge.target]) {
+          nodeMap[edge.source].children.push(edge.target);
+          nodeMap[edge.target].parents.push(edge.source);
+        }
+      });
+      
+      // Second pass: ensure non-Bible nodes without incoming edges 
+      // connect to level 0 (below Bible nodes)
+      nonBibleNodes.forEach(nodeId => {
+        const hasIncoming = edges.some(edge => edge.target === nodeId);
+        
+        // If no incoming edges and level not set yet
+        if (!hasIncoming && levels[nodeId] === undefined) {
+          // Start at level 0 (below Bible nodes at -1)
+          levels[nodeId] = 0;
+          
+          // Not a direct child of any node, but we place it at level 0
+          if (!rootNodes.includes(nodeId)) {
+            rootNodes.push(nodeId);
+          }
+        }
+      });
+      
+      // Assign levels to all remaining nodes through BFS
+      const queue = [...rootNodes];
+      while (queue.length > 0) {
+        const nodeId = queue.shift();
+        const node = nodeMap[nodeId];
+        const currentLevel = levels[nodeId];
+        
+        node.children.forEach(childId => {
+          // Skip if child is a Bible node (they stay at level -1)
+          if (nodeMap[childId].data.isBibleRef) return;
+          
+          // Ensure child level is at least one below parent
+          const minLevel = currentLevel + 1;
+          
+          if (levels[childId] === undefined || levels[childId] < minLevel) {
+            levels[childId] = minLevel;
+            queue.push(childId);
+          }
+        });
+      }
+      
+      // Position nodes based on their levels
+      const levelCounts = {};
+      const updatedNodes = [];
+      
+      // Calculate how many nodes per level
+      Object.keys(levels).forEach(nodeId => {
+        const level = levels[nodeId];
+        levelCounts[level] = (levelCounts[level] || 0) + 1;
+      });
+      
+      // Create a nodes-by-level mapping to aid in edge crossing reduction
+      const nodesByLevel = {};
+      Object.keys(levels).forEach(nodeId => {
+        const level = levels[nodeId];
+        if (!nodesByLevel[level]) {
+          nodesByLevel[level] = [];
+        }
+        nodesByLevel[level].push(nodeId);
+      });
+      
+      // Order nodes within each level to reduce edge crossings
+      // This is a simplified barycenter algorithm
+      Object.keys(nodesByLevel).forEach(level => {
+        // Skip the Bible nodes at level -1 - they're handled separately
+        if (parseInt(level) === -1) return;
+        
+        const nodesAtLevel = nodesByLevel[level];
+        
+        // For each node at this level, calculate average position of its parents
+        const nodePositions = nodesAtLevel.map(nodeId => {
+          const node = nodeMap[nodeId];
+          let avgPosition = nodesAtLevel.length / 2; // default middle position
+          
+          // If node has parents, get their average position in the previous level
+          if (node.parents.length > 0) {
+            let sum = 0;
+            let count = 0;
+            
+            node.parents.forEach(parentId => {
+              // Find parent's position in its level
+              if (levels[parentId] !== undefined) {
+                const parentLevel = nodesByLevel[levels[parentId]];
+                if (parentLevel) {
+                  const parentPos = parentLevel.indexOf(parentId);
+                  if (parentPos !== -1) {
+                    sum += parentPos;
+                    count++;
+                  }
+                }
+              }
+            });
+            
+            // Calculate average if there are positioned parents
+            if (count > 0) {
+              avgPosition = sum / count;
+            }
+          }
+          
+          return { id: nodeId, position: avgPosition };
+        });
+        
+        // Sort nodes by average parent position
+        nodePositions.sort((a, b) => a.position - b.position);
+        
+        // Re-assign the ordered nodes to this level
+        nodesByLevel[level] = nodePositions.map(n => n.id);
+      });
+      
+      // Track position within each level
+      const levelPositions = {};
+      
+      // Function to get x-coordinate based on level position
+      const getXPosition = (level, position, totalInLevel) => {
+        // Bible nodes get special treatment - wider spacing
+        const xSpacing = 250;
+        
+        // X position depends on position in level and total nodes in level
+        return position * xSpacing - ((totalInLevel - 1) * xSpacing / 2);
+      };
+      
+      // Position each node based on its level and optimized position
+      Object.keys(nodesByLevel).forEach(level => {
+        const nodesAtThisLevel = nodesByLevel[level];
+        const totalInLevel = nodesAtThisLevel.length;
+        
+        nodesAtThisLevel.forEach((nodeId, position) => {
+          const node = nodeMap[nodeId];
+          const ySpacing = 150;
+          
+          // Y position is determined by level (level -1 at top for Bible nodes)
+          const y = parseInt(level) * ySpacing;
+          
+          // X position is optimized to reduce crossings
+          const x = getXPosition(level, position, totalInLevel);
+          
+          // Style Bible nodes differently
+          updatedNodes.push({
+            ...node,
+            position: { x, y },
+            style: node.data.isBibleRef ? {
+              ...node.style,
+              background: '#e9f5fe',
+              borderColor: '#0ea5e9',
+            } : node.style
+          });
+        });
+      });
+      
+      return updatedNodes;
+    }
+  }), []);  // Empty dependency array since this shouldn't change
   
   // Modify the applyLayout function to avoid the infinite loop
   const applyLayout = useCallback((layout) => {
@@ -1046,19 +1046,19 @@ const GraphView = () => {
                 className={`px-2 py-1 text-xs rounded ${selectedLayout === 'circle' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
                 onClick={() => handleLayoutButtonClick('circle')}
               >
-                Circle
+                {t('graph.layoutTypes.circle')}
               </button>
               <button
                 className={`px-2 py-1 text-xs rounded ${selectedLayout === 'force' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
                 onClick={() => handleLayoutButtonClick('force')}
               >
-                Force
+                {t('graph.layoutTypes.force')}
               </button>
               <button
                 className={`px-2 py-1 text-xs rounded ${selectedLayout === 'hierarchical' ? 'bg-blue-600 text-white' : 'bg-gray-200'}`}
                 onClick={() => handleLayoutButtonClick('hierarchical')}
               >
-                Tree
+                {t('graph.layoutTypes.hierarchical')}
               </button>
             </div>
           </Panel>
