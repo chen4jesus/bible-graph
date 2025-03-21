@@ -10,6 +10,16 @@
   box-sizing: border-box;
 }
 
+/* Split view styles */
+.w-1/2 {
+  width: 50%;
+  height: 100%;
+}
+
+.border-r {
+  border-right: 1px solid #e5e7eb; /* Gray-200 */
+}
+
 /* Custom scrollbar styles */
 /* Firefox */
 * {

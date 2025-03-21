@@ -6,11 +6,13 @@ import NodeTable from './components/NodeEditor/NodeTable';
 import LanguageSwitcher from './components/LanguageSwitcher';
 import useBibleStore from './store/useBibleStore';
 import useNodeStore from './store/useNodeStore';
+import './App.css';
 import 'reactflow/dist/style.css';
 
 const App = () => {
   const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('reader');
+  const [splitView, setSplitView] = useState(false);
   const loadBibleData = useBibleStore(state => state.loadBibleData);
   const bibleData = useBibleStore(state => state.bibleData);
   const [loading, setLoading] = useState(true);
@@ -84,6 +86,18 @@ const App = () => {
     
     loadBible();
   }, [loadBibleData]);
+
+  // Handle switching to Knowledge Graph
+  const handleGraphButtonClick = () => {
+    setActiveTab('graph');
+    setSplitView(true);
+  };
+
+  // Handle switching to Bible Reader
+  const handleReaderButtonClick = () => {
+    setActiveTab('reader');
+    setSplitView(false);
+  };
   
   if (loading) {
     return (
@@ -116,7 +130,7 @@ const App = () => {
             <h1 className="text-2xl font-bold text-gray-900">{t('appTitle')}</h1>
             
             <div className="flex space-x-4 items-center">
-              {nodeCount > 0 && activeTab === 'reader' && (
+              {nodeCount > 0 && (activeTab === 'reader' || splitView) && (
                 <button
                   className="px-3 py-1 text-sm bg-primary-100 text-primary-700 rounded-md"
                   onClick={() => setShowNodeTable(showNodeTable ? false : true)}
@@ -130,7 +144,7 @@ const App = () => {
                     ? 'bg-primary-100 text-primary-700' 
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
-                onClick={() => setActiveTab('reader')}
+                onClick={handleReaderButtonClick}
               >
                 {t('nav.bibleReader')}
               </button>
@@ -140,7 +154,7 @@ const App = () => {
                     ? 'bg-primary-100 text-primary-700' 
                     : 'text-gray-700 hover:bg-gray-100'
                 }`}
-                onClick={() => setActiveTab('graph')}
+                onClick={handleGraphButtonClick}
               >
                 {t('nav.knowledgeGraph')}
               </button>
@@ -152,17 +166,32 @@ const App = () => {
       
       {/* Main Content */}
       <main className="flex-1 flex overflow-hidden" style={{ height: 'calc(100vh - 64px)', width: '100%' }}>
-        {activeTab === 'reader' ? (
-          <BibleReader />
-        ) : (
-          // Graph container with key to force remount
-          <div key="graph-container" style={{ width: '100%', height: '100%' }}>
-            <GraphView />
-          </div>
+        {/* When not in split view, show either Bible Reader or Graph View based on activeTab */}
+        {!splitView && (
+          activeTab === 'reader' ? (
+            <BibleReader />
+          ) : (
+            // Graph container with key to force remount
+            <div key="graph-container" style={{ width: '100%', height: '100%' }}>
+              <GraphView />
+            </div>
+          )
+        )}
+
+        {/* When in split view, show both Bible Reader and Graph View side by side */}
+        {splitView && (
+          <>
+            <div className="w-1/2 border-r" style={{ height: '100%' }}>
+              <BibleReader />
+            </div>
+            <div className="w-1/2" style={{ height: '100%' }}>
+              <GraphView />
+            </div>
+          </>
         )}
         
-        {/* Node Table Overlay (only in Reader view) */}
-        {activeTab === 'reader' && showNodeTable && nodeCount > 0 && (
+        {/* Node Table Overlay (shown in both Reader and Split views) */}
+        {(activeTab === 'reader' || splitView) && showNodeTable && nodeCount > 0 && (
           <div 
             className={`absolute transition-all duration-300 left-0 right-0 bg-white shadow-lg rounded-t-lg z-10 node-table-container ${
               showNodeTable === 'collapsed' ? 'bottom-0 h-12' : 'bottom-0 max-h-[50vh]'
