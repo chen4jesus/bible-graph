@@ -2,11 +2,9 @@ import React, { memo, useState } from 'react';
 import { Handle, Position } from 'reactflow';
 import useBibleStore from '../../store/useBibleStore';
 import NodeEditor from '../NodeEditor/NodeEditor';
-import useNodeStore from '../../store/useNodeStore';
 
-const KnowledgeNode = ({ id, data, isConnectable, selected, dragging }) => {
+const KnowledgeNode = ({ id, data, isConnectable, selected, dragging, onDelete }) => {
   const setCurrentLocation = useBibleStore(state => state.setCurrentLocation);
-  const removeNode = useNodeStore(state => state.removeNode);
   const [showEditor, setShowEditor] = useState(false);
   const [showCreateConnected, setShowCreateConnected] = useState(false);
   
@@ -29,8 +27,8 @@ const KnowledgeNode = ({ id, data, isConnectable, selected, dragging }) => {
   
   const handleDeleteClick = (e) => {
     e.stopPropagation(); // Prevent node selection in ReactFlow
-    if (window.confirm(`Are you sure you want to delete "${title}"?`)) {
-      removeNode(id);
+    if (onDelete) {
+      onDelete(id, title);
     }
   };
   
