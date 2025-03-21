@@ -36,10 +36,9 @@ const NodeTable = () => {
   
   return (
     <>
-      <div className="overflow-x-auto">
-        <h2 className="text-xl font-bold mb-4 px-4">{t('tabs.userNodes')} ({nodes.length})</h2>
+      <div className="overflow-x-auto pb-4">
         <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
+          <thead className="bg-gray-50 sticky top-0 z-10">
             <tr>
               <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 {t('node.title')}
@@ -118,6 +117,9 @@ const NodeTable = () => {
                 </tr>
               );
             })}
+            <tr className="h-4">
+              <td colSpan="6"></td>
+            </tr>
           </tbody>
         </table>
       </div>

@@ -146,22 +146,45 @@
   height: 100%;
 }
 
-/* Node table collapsible styling */
+/* Styles for node table transition and positioning */
 .node-table-container {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 50;
+  background-color: white;
+  border-top-left-radius: 0.375rem;
+  border-top-right-radius: 0.375rem;
+  box-shadow: 0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06);
   transition: all 0.3s ease-in-out;
+  overflow: hidden;
+  max-height: 50vh;
 }
 
 .node-table-header {
   cursor: pointer;
-  user-select: none;
-}
-
-.node-table-header:hover {
+  height: 3rem;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0 1rem;
+  border-bottom: 1px solid #e5e7eb;
   background-color: #f9fafb;
 }
 
+.node-table-content {
+  overflow-y: auto;
+  max-height: calc(50vh - 3rem);
+  padding-bottom: 1rem;
+}
+
+.node-table-content table {
+  margin-bottom: 0.5rem;
+}
+
 .node-table-chevron {
-  transition: transform 0.3s ease;
+  transition: transform 0.3s ease-in-out;
 }
 
 .node-table-chevron.collapsed {

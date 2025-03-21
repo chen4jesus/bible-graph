@@ -57,11 +57,11 @@
     "delete": "Delete"
   },
   "editConfirm": {
-    "title": "确认保存",
-    "message": "确定要保存 \"{{title}}\" 吗？",
-    "cancel": "取消",
-    "save": "保存",
-    "add": "新增"
+    "title": "Confirm Edit",
+    "message": "Are you sure you want to edit \"{{title}}\"?",
+    "cancel": "Cancel",
+    "save": "Save",
+    "add": "Add"
   },
   "table": {
     "close": "Close"

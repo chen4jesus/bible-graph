@@ -22,6 +22,7 @@ const App = () => {
   const createBibleReferenceNode = useNodeStore(state => state.createBibleReferenceNode);
   const linkNodes = useNodeStore(state => state.linkNodes);
   const nodes = useNodeStore(state => state.nodes);
+  const [nodeTableCollapsed, setNodeTableCollapsed] = useState(false);
   
   // Migrate old nodes to add Bible reference connections
   useEffect(() => {
@@ -210,11 +211,42 @@ const App = () => {
         
         {/* Node Table Overlay (shown in both Reader and Split views) */}
         {(activeTab === 'reader' || splitView) && showNodeTable && nodeCount > 0 && (
-          <div 
-            className="absolute bottom-0 left-0 right-0 bg-white shadow-lg rounded-t-lg z-50 max-h-[50vh] overflow-y-auto"
-            style={{ boxShadow: '0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06)' }}
-          >
-            <NodeTable />
+          <div className={`node-table-container ${nodeTableCollapsed ? 'h-12' : ''}`}>
+            {/* Table header with collapse/expand toggle */}
+            <div 
+              className="node-table-header"
+              onClick={() => setNodeTableCollapsed(!nodeTableCollapsed)}
+            >
+              <h2 className="font-semibold text-gray-700">
+                {t('tabs.userNodes')} ({nodeCount})
+              </h2>
+              <div className="flex items-center space-x-2">
+                <button 
+                  className="p-1 rounded-md hover:bg-gray-200"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowNodeTable(false);
+                  }}
+                  aria-label="Close"
+                >
+                  <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 text-gray-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
+                <div className="transform">
+                  <svg xmlns="http://www.w3.org/2000/svg" className={`h-5 w-5 text-gray-500 node-table-chevron ${nodeTableCollapsed ? 'collapsed' : ''}`} fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                  </svg>
+                </div>
+              </div>
+            </div>
+            
+            {/* Only render the table content when not collapsed */}
+            {!nodeTableCollapsed && (
+              <div className="node-table-content pb-2">
+                <NodeTable />
+              </div>
+            )}
           </div>
         )}
       </main>
