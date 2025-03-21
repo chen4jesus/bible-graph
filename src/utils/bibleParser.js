@@ -1,16 +1,5 @@
-// Try different import approaches for xml2js
-let xml2js;
-try {
-  xml2js = require('xml2js');
-} catch (e) {
-  console.error('Error requiring xml2js:', e);
-  // Try ES module import as fallback
-  import('xml2js').then(module => {
-    xml2js = module;
-  }).catch(err => {
-    console.error('Failed to import xml2js:', err);
-  });
-}
+// Import xml2js using ES modules
+import * as xml2js from 'xml2js';
 
 export const parseBibleXML = (xmlContent) => {
   return new Promise((resolve, reject) => {

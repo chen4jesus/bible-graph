@@ -1,0 +1,136 @@
+/* App-specific styles */
+.dark {
+  color-scheme: dark;
+}
+
+/* Basic reset */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* Custom scrollbar styles */
+/* Firefox */
+* {
+  scrollbar-width: thin;
+  scrollbar-color: #cbd5e0 #f7fafc;
+}
+
+/* Chrome, Edge, and Safari */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f7fafc;
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb {
+  background-color: #cbd5e0;
+  border-radius: 4px;
+  border: 2px solid #f7fafc;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #a0aec0;
+}
+
+/* Dark mode scrollbars */
+.dark * {
+  scrollbar-color: #4a5568 #1a202c;
+}
+
+.dark ::-webkit-scrollbar-track {
+  background: #1a202c;
+}
+
+.dark ::-webkit-scrollbar-thumb {
+  background-color: #4a5568;
+  border: 2px solid #1a202c;
+}
+
+.dark ::-webkit-scrollbar-thumb:hover {
+  background-color: #718096;
+}
+
+/* Utility classes */
+.container {
+  width: 100%;
+  max-width: 1280px;
+  margin: 0 auto;
+  padding: 0 1rem;
+}
+
+/* React Flow overrides */
+.react-flow__node {
+  border-radius: 6px;
+  padding: 10px;
+  min-width: 150px;
+}
+
+.react-flow__controls {
+  box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+}
+
+/* Custom controls */
+.control-button {
+  background: white;
+  border: 1px solid #eee;
+  border-radius: 4px;
+  padding: 6px;
+  margin: 2px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.control-button:hover {
+  background: #f5f5f5;
+  border-color: #ddd;
+}
+
+/* Bible reader styles */
+.bible-verse {
+  margin-bottom: 0.5rem;
+  padding: 0.25rem 0;
+}
+
+.verse-number {
+  font-weight: 600;
+  color: #6b7280;
+  margin-right: 0.25rem;
+}
+
+/* Bible reader scrollable container */
+.bible-text-container {
+  max-height: calc(100vh - 300px);
+  overflow-y: auto;
+  padding-right: 10px;
+}
+
+/* Node table collapsible styling */
+.node-table-container {
+  transition: all 0.3s ease-in-out;
+}
+
+.node-table-header {
+  cursor: pointer;
+  user-select: none;
+}
+
+.node-table-header:hover {
+  background-color: #f9fafb;
+}
+
+.node-table-chevron {
+  transition: transform 0.3s ease;
+}
+
+.node-table-chevron.collapsed {
+  transform: rotate(180deg);
+} 

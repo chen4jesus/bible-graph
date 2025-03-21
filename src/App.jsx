@@ -119,7 +119,7 @@ const App = () => {
               {nodeCount > 0 && activeTab === 'reader' && (
                 <button
                   className="px-3 py-1 text-sm bg-primary-100 text-primary-700 rounded-md"
-                  onClick={() => setShowNodeTable(!showNodeTable)}
+                  onClick={() => setShowNodeTable(showNodeTable ? false : true)}
                 >
                   {showNodeTable ? t('graph.hideTable') : t('graph.showTable')} ({nodeCount})
                 </button>
@@ -163,16 +163,52 @@ const App = () => {
         
         {/* Node Table Overlay (only in Reader view) */}
         {activeTab === 'reader' && showNodeTable && nodeCount > 0 && (
-          <div className="absolute bottom-0 left-0 right-0 bg-white shadow-lg rounded-t-lg max-h-[50vh] overflow-y-auto z-10">
-            <NodeTable />
-            <div className="p-2 text-right">
-              <button 
-                className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded"
-                onClick={() => setShowNodeTable(false)}
-              >
-                {t('table.close')}
-              </button>
+          <div 
+            className={`absolute transition-all duration-300 left-0 right-0 bg-white shadow-lg rounded-t-lg z-10 node-table-container ${
+              showNodeTable === 'collapsed' ? 'bottom-0 h-12' : 'bottom-0 max-h-[50vh]'
+            }`}
+            style={{ 
+              boxShadow: '0 -4px 6px -1px rgba(0, 0, 0, 0.1), 0 -2px 4px -1px rgba(0, 0, 0, 0.06)'
+            }}
+          >
+            {/* Collapse/Expand Toggle Bar */}
+            <div 
+              className="h-12 px-4 flex items-center justify-between bg-gray-50 border-b node-table-header"
+              onClick={() => setShowNodeTable(showNodeTable === 'collapsed' ? true : 'collapsed')}
+            >
+              <h2 className="text-lg font-semibold text-gray-700">
+                Knowledge Nodes ({nodeCount})
+              </h2>
+              <div className="flex items-center space-x-2">
+                {showNodeTable !== 'collapsed' && (
+                  <button 
+                    className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded hover:bg-gray-300"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setShowNodeTable(false);
+                    }}
+                  >
+                    {t('table.close')}
+                  </button>
+                )}
+                <svg 
+                  xmlns="http://www.w3.org/2000/svg" 
+                  className={`h-5 w-5 node-table-chevron ${showNodeTable === 'collapsed' ? 'collapsed' : ''}`} 
+                  fill="none" 
+                  viewBox="0 0 24 24" 
+                  stroke="currentColor"
+                >
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 15l7-7 7 7" />
+                </svg>
+              </div>
             </div>
+            
+            {/* Table Content - only rendered when expanded */}
+            {showNodeTable !== 'collapsed' && (
+              <div className="overflow-y-auto" style={{ maxHeight: 'calc(50vh - 48px)' }}>
+                <NodeTable />
+              </div>
+            )}
           </div>
         )}
       </main>

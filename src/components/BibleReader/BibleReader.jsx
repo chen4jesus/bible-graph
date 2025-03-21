@@ -144,7 +144,10 @@ const BibleReader = () => {
         <h1 className="text-3xl font-bold mb-2 text-center">{bookName}</h1>
         <h2 className="text-xl font-semibold mb-6 text-center">Chapter {currentChapter}</h2>
         
-        <div className="leading-relaxed text-lg" onMouseUp={handleMouseUp}>
+        <div 
+          className="leading-relaxed text-lg bible-text-container"
+          onMouseUp={handleMouseUp}
+        >
           {verses.map((verse) => (
             <div 
               key={verse.number}
