@@ -493,7 +493,54 @@ const GraphView = () => {
       const timer = setTimeout(() => {
         console.log('Running delayed layout application');
         try {
-          applyLayout();
+          // Don't show the loading indicator for initial layout to avoid flashing
+          // but use the same transition logic as the layout button
+          
+          // Get current nodes and edges
+          const currentNodes = [...nodes];
+          const currentEdges = [...edges];
+          
+          // Apply the selected layout algorithm
+          let updatedNodes;
+          switch (selectedLayout) {
+            case 'circle':
+              updatedNodes = layoutAlgorithms.circle(currentNodes);
+              break;
+            case 'force':
+              updatedNodes = layoutAlgorithms.force(currentNodes, currentEdges);
+              break;
+            case 'hierarchical':
+              updatedNodes = layoutAlgorithms.hierarchical(currentNodes, currentEdges);
+              break;
+            default:
+              updatedNodes = layoutAlgorithms.force(currentNodes, currentEdges);
+          }
+          
+          // Create a transition version of nodes
+          const transitionNodes = updatedNodes.map(node => {
+            return {
+              ...node,
+              style: {
+                ...node.style,
+                transition: 'transform 400ms ease-in-out'
+              }
+            };
+          });
+          
+          // Set nodes with transition property
+          setNodes(transitionNodes);
+          
+          // Wait for transition to finish before fitting view
+          setTimeout(() => {
+            if (reactFlowInstance) {
+              reactFlowInstance.fitView({ 
+                padding: 0.3,
+                duration: 300
+              });
+              calculateBoundaries();
+            }
+          }, 500);
+          
           console.log('Layout applied successfully');
         } catch (err) {
           console.error('Error applying layout:', err);
@@ -504,7 +551,7 @@ const GraphView = () => {
       
       return () => clearTimeout(timer);
     }
-  }, [nodes.length, applyLayout]);
+  }, [nodes.length, edges, selectedLayout, setNodes, reactFlowInstance, calculateBoundaries, applyLayout]);
   
   // Separate function to save positions to the store
   const savePositionsToStore = useCallback(() => {
@@ -650,8 +697,8 @@ const GraphView = () => {
     // Update the selected layout first
     setSelectedLayout(layout);
     
-    // Force a more reliable layout application by using a more direct approach
-    setTimeout(() => {
+    // Use requestAnimationFrame to ensure smoother transitions
+    requestAnimationFrame(() => {
       // Get current nodes and edges
       const currentNodes = [...nodes];
       const currentEdges = [...edges];
@@ -672,31 +719,45 @@ const GraphView = () => {
           updatedNodes = layoutAlgorithms.force(currentNodes, currentEdges);
       }
       
-      // Set nodes directly without going through the regular applyLayout function
-      console.log(`Directly applying ${layout} layout to ${updatedNodes.length} nodes`);
-      setNodes(updatedNodes);
+      // Create a transition version of nodes by animating from current to new positions
+      const transitionNodes = updatedNodes.map(node => {
+        // Find the original node
+        const originalNode = currentNodes.find(n => n.id === node.id);
+        if (!originalNode) return node;
+        
+        return {
+          ...node,
+          // Use the same style but add transition for smooth movement
+          style: {
+            ...node.style,
+            transition: 'transform 500ms ease-in-out'
+          }
+        };
+      });
       
-      // Fit view and save positions after a delay
+      // Set nodes with transition property
+      setNodes(transitionNodes);
+      
+      // Wait for transition to finish before fitting view
       setTimeout(() => {
         if (reactFlowInstance) {
           reactFlowInstance.fitView({ 
             padding: 0.3,
             includeHiddenNodes: false,
             minZoom: 0.5,
-            maxZoom: 1.5
+            maxZoom: 1.5,
+            duration: 400
           });
           calculateBoundaries();
         }
         
         // Save positions to store
-        setTimeout(() => {
-          updateAllNodePositions(updatedNodes);
-          
-          // Reset layout changing indicator
-          setIsLayoutChanging(false);
-        }, 100);
-      }, 200);
-    }, 50);
+        updateAllNodePositions(transitionNodes);
+        
+        // Reset layout changing indicator
+        setIsLayoutChanging(false);
+      }, 600); // Wait for transition to complete
+    });
   }, [selectedLayout, nodes, edges, reactFlowInstance, setNodes, calculateBoundaries, updateAllNodePositions]);
   
   // Safety mechanism to ensure the loading state is reset
@@ -869,13 +930,15 @@ const GraphView = () => {
       )}
       
       {isLayoutChanging && (
-        <div className="fixed inset-0 bg-black bg-opacity-30 flex items-center justify-center z-50 pointer-events-none">
-          <div className="bg-white p-4 rounded-lg shadow-lg flex items-center space-x-3">
+        <div className="fixed inset-0 bg-black bg-opacity-20 flex items-center justify-center z-50 pointer-events-none transition-opacity duration-300">
+          <div className="bg-white p-4 rounded-lg shadow-lg flex items-center space-x-3 animate-fadeIn">
             <svg className="animate-spin h-5 w-5 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
               <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
               <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
             </svg>
-            <span className="text-gray-700 font-medium">{t('graph.applyingLayout', { layout: selectedLayout })}</span>
+            <span className="text-gray-700 font-medium">
+              {t('graph.applyingLayout', { layout: selectedLayout })}
+            </span>
           </div>
         </div>
       )}
