@@ -190,7 +190,13 @@ const useNodeStore = create(
       }
     }),
     {
-      name: 'knowledge-nodes-storage'
+      name: 'knowledge-nodes-storage',
+      getStorage: () => localStorage,
+      partialize: (state) => ({
+        nodes: state.nodes,
+        edges: state.edges,
+        selectedNode: state.selectedNode
+      })
     }
   )
 );

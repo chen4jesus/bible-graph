@@ -620,13 +620,30 @@ const GraphView = () => {
     [linkNodes, setEdges]
   );
   
+  // Save positions to store after drag or layout change
+  useEffect(() => {
+    // Save node positions to the store after they're stable
+    const timer = setTimeout(() => {
+      if (nodes.length > 0 && !isApplyingLayoutRef.current) {
+        savePositionsToStore();
+      }
+    }, 100);
+    
+    return () => clearTimeout(timer);
+  }, [nodes, isApplyingLayoutRef, savePositionsToStore]);
+  
   // Update node positions in store when dragged
   const handleNodeDragStop = useCallback(
     (_, node) => {
       console.log('Node dragged to:', node.position);
       updateNodePosition(node.id, node.position);
+      
+      // Force save all positions
+      setTimeout(() => {
+        savePositionsToStore();
+      }, 10);
     },
-    [updateNodePosition]
+    [updateNodePosition, savePositionsToStore]
   );
 
   // Update onNodesChange handler to prevent layout application during drag operations
@@ -665,6 +682,11 @@ const GraphView = () => {
           if (node) {
             // Update position in store for this specific node
             updateNodePosition(node.id, node.position);
+            
+            // Force save all positions
+            setTimeout(() => {
+              savePositionsToStore();
+            }, 10);
           }
         }
         
@@ -672,7 +694,7 @@ const GraphView = () => {
         isApplyingLayoutRef.current = false;
       }
     },
-    [nodes, onNodesChange, updateNodePosition]
+    [nodes, onNodesChange, updateNodePosition, savePositionsToStore]
   );
   
   // Improve handleLayoutButtonClick to ensure layout is always applied correctly
