@@ -1,5 +1,6 @@
 {
   "appTitle": "圣经知识图谱",
+  "hintTitle": "创建知识节点:",
   "nav": {
     "bibleReader": "圣经阅读器",
     "knowledgeGraph": "知识图谱"

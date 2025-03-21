@@ -1,5 +1,6 @@
 {
   "appTitle": "Bible Knowledge Graph",
+  "hintTitle": "Create Knowledge Nodes:",
   "nav": {
     "bibleReader": "Bible Reader",
     "knowledgeGraph": "Knowledge Graph"

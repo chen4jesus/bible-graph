@@ -134,7 +134,7 @@ const BibleReader = () => {
       {/* Creation hint */}
       {showHint && (
         <div className="bg-primary-50 border-l-4 border-primary-500 p-4 mb-6 text-sm text-primary-700">
-          <p className="font-medium">Create Knowledge Nodes:</p>
+          <p className="font-medium">{t('hintTitle')}</p>
           <p>Select any text in the Bible to create a knowledge node. Nodes will appear in the Knowledge Graph view.</p>
         </div>
       )}
