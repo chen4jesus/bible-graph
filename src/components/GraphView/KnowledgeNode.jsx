@@ -1,4 +1,4 @@
-import React, { memo, useState } from 'react';
+import React, { memo, useState, useEffect, useRef, useCallback } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Handle, Position } from 'reactflow';
 import useBibleStore from '../../store/useBibleStore';
@@ -7,12 +7,69 @@ import NodeEditor from '../NodeEditor/NodeEditor';
 const KnowledgeNode = ({ id, data, isConnectable, selected, dragging, onDelete }) => {
   const { t } = useTranslation();
   const setCurrentLocation = useBibleStore(state => state.setCurrentLocation);
+  const getVerseContent = useBibleStore(state => state.getVerseContent);
   const [showEditor, setShowEditor] = useState(false);
   const [showCreateConnected, setShowCreateConnected] = useState(false);
+  const [showTooltip, setShowTooltip] = useState(false);
+  const [verseContent, setVerseContent] = useState(null);
+  const [tooltipPosition, setTooltipPosition] = useState({ top: 0, left: 0 });
+  const nodeRef = useRef(null);
+  const tooltipRef = useRef(null);
+  const hoverTimeoutRef = useRef(null);
   
   const { title, datetime, description, bibleReference, isBibleRef, referencedBy = [], referencedTo = [] } = data;
   const date = new Date(datetime).toLocaleString();
   const connectionCount = (referencedBy?.length || 0) + (referencedTo?.length || 0);
+  
+  // Load Bible verse content when hovering over Bible reference nodes
+  useEffect(() => {
+    if (isBibleRef && bibleReference && showTooltip) {
+      const content = getVerseContent(bibleReference);
+      setVerseContent(content);
+    }
+  }, [isBibleRef, bibleReference, showTooltip, getVerseContent]);
+  
+  // Calculate tooltip position when it becomes visible
+  useEffect(() => {
+    if (showTooltip && nodeRef.current && isBibleRef) {
+      const nodeRect = nodeRef.current.getBoundingClientRect();
+      setTooltipPosition({
+        top: nodeRect.height + 8, // Position below the node with a small gap
+        left: nodeRect.width / 2, // Center horizontally
+      });
+    }
+  }, [showTooltip, isBibleRef]);
+  
+  // Clean up timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (hoverTimeoutRef.current) {
+        clearTimeout(hoverTimeoutRef.current);
+      }
+    };
+  }, []);
+  
+  // Handle mouse enter with debounce to prevent flicker
+  const handleMouseEnter = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    
+    hoverTimeoutRef.current = setTimeout(() => {
+      setShowTooltip(true);
+    }, 50); // Short delay to stabilize hover
+  }, []);
+  
+  // Handle mouse leave with debounce to prevent flicker
+  const handleMouseLeave = useCallback(() => {
+    if (hoverTimeoutRef.current) {
+      clearTimeout(hoverTimeoutRef.current);
+    }
+    
+    hoverTimeoutRef.current = setTimeout(() => {
+      setShowTooltip(false);
+    }, 100); // Slightly longer delay before hiding
+  }, []);
   
   const handleBibleRefClick = (e) => {
     e.stopPropagation();
@@ -45,11 +102,14 @@ const KnowledgeNode = ({ id, data, isConnectable, selected, dragging, onDelete }
   return (
     <>
       <div 
+        ref={nodeRef}
         className={`p-4 rounded-lg border min-w-[220px] shadow-sm ${
           isBibleRef 
-            ? 'bg-blue-50 border-blue-300' 
+            ? 'bg-blue-50 border-blue-300 bible-node' 
             : 'bg-white border-gray-200'
         } ${selected ? 'ring-2 ring-blue-400' : ''} ${dragging ? 'cursor-grabbing opacity-70' : 'cursor-grab'}`}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
       >
         <Handle
           type="target"
@@ -129,6 +189,22 @@ const KnowledgeNode = ({ id, data, isConnectable, selected, dragging, onDelete }
           className={`w-3 h-3 ${isBibleRef ? 'bg-blue-500' : 'bg-primary-500'}`}
         />
       </div>
+      
+      {/* Bible verse tooltip - only show for Bible reference nodes when hovering */}
+      {isBibleRef && verseContent && (
+        <div 
+          ref={tooltipRef}
+          className={`bible-verse-tooltip ${showTooltip ? 'visible' : ''}`}
+          style={{ 
+            top: tooltipPosition.top,
+            left: tooltipPosition.left,
+            transform: 'translateX(-50%)'
+          }}
+        >
+          <div className="font-semibold text-blue-800 mb-1">{verseContent.reference}</div>
+          <div className="text-sm text-gray-700">{verseContent.text}</div>
+        </div>
+      )}
       
       {showEditor && (
         <NodeEditor

@@ -63,7 +63,38 @@ const useBibleStore = create(
       
       clearHighlightedText: () => set({
         highlightedText: null
-      })
+      }),
+      
+      // Function to get a specific verse by reference (format: "book.chapter.verse")
+      getVerseContent: (verseRef) => {
+        const bibleData = get().bibleData;
+        if (!bibleData) return null;
+        
+        try {
+          const [bookId, chapterNum, verseNum] = verseRef.split('.');
+          
+          // Find the book
+          const book = bibleData.find(b => b.id === bookId);
+          if (!book) return null;
+          
+          // Find the chapter
+          const chapter = book.chapters.find(c => c.number === chapterNum);
+          if (!chapter) return null;
+          
+          // Find the verse
+          const verse = chapter.verses.find(v => v.number === verseNum);
+          if (!verse) return null;
+          
+          return {
+            reference: `${book.name} ${chapterNum}:${verseNum}`,
+            text: verse.text,
+            fullRef: verseRef
+          };
+        } catch (error) {
+          console.error('Error getting verse content:', error);
+          return null;
+        }
+      }
     }),
     {
       name: 'bible-storage',
