@@ -20,4 +20,10 @@ html, body, #root {
 
 .highlight {
   @apply bg-yellow-200 cursor-pointer rounded-sm px-0.5;
+}
+
+/* Add ReactFlow wrapper styles */
+.reactflow-wrapper {
+  height: 100%;
+  width: 100%;
 } 

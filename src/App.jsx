@@ -1,12 +1,15 @@
 import React, { useState, useEffect } from 'react';
+import { useTranslation } from 'react-i18next';
 import BibleReader from './components/BibleReader/BibleReader';
 import GraphView from './components/GraphView/GraphView';
 import NodeTable from './components/NodeEditor/NodeTable';
+import LanguageSwitcher from './components/LanguageSwitcher';
 import useBibleStore from './store/useBibleStore';
 import useNodeStore from './store/useNodeStore';
 import 'reactflow/dist/style.css';
 
 const App = () => {
+  const { t } = useTranslation();
   const [activeTab, setActiveTab] = useState('reader');
   const loadBibleData = useBibleStore(state => state.loadBibleData);
   const bibleData = useBibleStore(state => state.bibleData);
@@ -110,7 +113,7 @@ const App = () => {
       <header className="bg-white shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16 items-center">
-            <h1 className="text-2xl font-bold text-gray-900">Bible Knowledge Graph</h1>
+            <h1 className="text-2xl font-bold text-gray-900">{t('appTitle')}</h1>
             
             <div className="flex space-x-4 items-center">
               {nodeCount > 0 && activeTab === 'reader' && (
@@ -118,7 +121,7 @@ const App = () => {
                   className="px-3 py-1 text-sm bg-primary-100 text-primary-700 rounded-md"
                   onClick={() => setShowNodeTable(!showNodeTable)}
                 >
-                  {showNodeTable ? 'Hide' : 'Show'} Nodes ({nodeCount})
+                  {showNodeTable ? t('graph.hideTable') : t('graph.showTable')} ({nodeCount})
                 </button>
               )}
               <button
@@ -129,7 +132,7 @@ const App = () => {
                 }`}
                 onClick={() => setActiveTab('reader')}
               >
-                Bible Reader
+                {t('nav.bibleReader')}
               </button>
               <button
                 className={`px-3 py-2 rounded-md text-sm font-medium ${
@@ -139,16 +142,24 @@ const App = () => {
                 }`}
                 onClick={() => setActiveTab('graph')}
               >
-                Knowledge Graph
+                {t('nav.knowledgeGraph')}
               </button>
+              <LanguageSwitcher />
             </div>
           </div>
         </div>
       </header>
       
       {/* Main Content */}
-      <main className="flex-1 relative" style={{ height: 'calc(100vh - 64px)' }}>
-        {activeTab === 'reader' ? <BibleReader /> : <GraphView />}
+      <main className="flex-1 flex overflow-hidden" style={{ height: 'calc(100vh - 64px)', width: '100%' }}>
+        {activeTab === 'reader' ? (
+          <BibleReader />
+        ) : (
+          // Graph container with key to force remount
+          <div key="graph-container" style={{ width: '100%', height: '100%' }}>
+            <GraphView />
+          </div>
+        )}
         
         {/* Node Table Overlay (only in Reader view) */}
         {activeTab === 'reader' && showNodeTable && nodeCount > 0 && (
@@ -159,7 +170,7 @@ const App = () => {
                 className="px-3 py-1 bg-gray-200 text-gray-700 text-sm rounded"
                 onClick={() => setShowNodeTable(false)}
               >
-                Close
+                {t('table.close')}
               </button>
             </div>
           </div>
