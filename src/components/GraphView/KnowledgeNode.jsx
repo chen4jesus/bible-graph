@@ -50,7 +50,9 @@ const KnowledgeNode = ({ id, data, isConnectable, selected, dragging, onDelete }
   }, []);
   
   // Handle mouse enter with debounce to prevent flicker
-  const handleMouseEnter = useCallback(() => {
+  const handleMouseEnter = useCallback((e) => {
+    e.stopPropagation();
+    
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
@@ -61,7 +63,9 @@ const KnowledgeNode = ({ id, data, isConnectable, selected, dragging, onDelete }
   }, []);
   
   // Handle mouse leave with debounce to prevent flicker
-  const handleMouseLeave = useCallback(() => {
+  const handleMouseLeave = useCallback((e) => {
+    e.stopPropagation();
+    
     if (hoverTimeoutRef.current) {
       clearTimeout(hoverTimeoutRef.current);
     }
@@ -105,11 +109,12 @@ const KnowledgeNode = ({ id, data, isConnectable, selected, dragging, onDelete }
         ref={nodeRef}
         className={`p-4 rounded-lg border min-w-[220px] shadow-sm ${
           isBibleRef 
-            ? 'bg-blue-50 border-blue-300 bible-node' 
-            : 'bg-white border-gray-200'
-        } ${selected ? 'ring-2 ring-blue-400' : ''} ${dragging ? 'cursor-grabbing opacity-70' : 'cursor-grab'}`}
+            ? 'bg-blue-50 border-blue-300 bible-node cursor-pointer-stable' 
+            : 'bg-white border-gray-200 cursor-grab'
+        } ${selected ? 'ring-2 ring-blue-400' : ''} ${dragging ? 'cursor-grabbing opacity-70' : ''}`}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
+        onClick={(e) => isBibleRef && e.stopPropagation()}
       >
         <Handle
           type="target"
@@ -134,7 +139,7 @@ const KnowledgeNode = ({ id, data, isConnectable, selected, dragging, onDelete }
             <div className="flex space-x-1">
               <button 
                 onClick={handleCreateConnectedClick}
-                className="text-xs text-gray-500 hover:text-primary-600 z-10"
+                className="text-xs text-gray-500 hover:text-primary-600 z-10 cursor-pointer-stable"
                 aria-label={t('node.actions.createConnected')}
                 title={t('node.actions.createConnected')}
               >
@@ -144,7 +149,7 @@ const KnowledgeNode = ({ id, data, isConnectable, selected, dragging, onDelete }
               </button>
               <button 
                 onClick={handleEditClick}
-                className="text-xs text-gray-500 hover:text-primary-600 z-10"
+                className="text-xs text-gray-500 hover:text-primary-600 z-10 cursor-pointer-stable"
                 aria-label={t('node.actions.edit')}
                 title={t('node.actions.edit')}
               >
@@ -154,7 +159,7 @@ const KnowledgeNode = ({ id, data, isConnectable, selected, dragging, onDelete }
               </button>
               <button
                 onClick={handleDeleteClick}
-                className="text-xs text-gray-500 hover:text-red-600 z-10"
+                className="text-xs text-gray-500 hover:text-red-600 z-10 cursor-pointer-stable"
                 aria-label={t('node.actions.delete')}
                 title={t('node.actions.delete')}
               >
@@ -172,7 +177,7 @@ const KnowledgeNode = ({ id, data, isConnectable, selected, dragging, onDelete }
         
         {bibleReference && !isBibleRef && (
           <div 
-            className="text-xs italic text-primary-600 mt-2 cursor-pointer hover:underline"
+            className="text-xs italic text-primary-600 mt-2 cursor-pointer-stable hover:underline"
             onClick={handleBibleRefClick}
             tabIndex={0}
             aria-label={`Navigate to Bible reference ${bibleReference}`}

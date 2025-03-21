@@ -1,16 +1,38 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import useNodeStore from '../../store/useNodeStore';
 
 const NodeEditor = ({ highlightedText, existingNode, connectToNode, onClose }) => {
   const addNode = useNodeStore(state => state.addNode);
   const updateNode = useNodeStore(state => state.updateNode);
   const linkNodes = useNodeStore(state => state.linkNodes);
+  const modalRef = useRef(null);
   
   const [title, setTitle] = useState(existingNode ? existingNode.data.title : '');
   const [description, setDescription] = useState(existingNode ? existingNode.data.description : '');
   
   const isEditMode = !!existingNode;
   const isConnectedMode = !!connectToNode;
+  
+  // Add event listener to handle clicks outside the modal
+  useEffect(() => {
+    const handleClickOutside = (event) => {
+      if (modalRef.current && !modalRef.current.contains(event.target)) {
+        onClose();
+      }
+    };
+    
+    // Add event listener
+    document.addEventListener('mousedown', handleClickOutside);
+    
+    // Block scroll when modal is open
+    document.body.style.overflow = 'hidden';
+    
+    // Cleanup function
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.body.style.overflow = 'auto';
+    };
+  }, [onClose]);
   
   // Generate title placeholder based on connection source if in connected mode
   const getPlaceholder = () => {
@@ -53,9 +75,25 @@ const NodeEditor = ({ highlightedText, existingNode, connectToNode, onClose }) =
     onClose();
   };
   
+  // Stop propagation to prevent interaction with elements behind the modal
+  const handleModalClick = (e) => {
+    e.stopPropagation();
+  };
+  
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl">
+    <div 
+      className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50"
+      style={{ 
+        pointerEvents: 'auto',
+        cursor: 'default'
+      }}
+      onClick={handleModalClick}
+    >
+      <div 
+        ref={modalRef}
+        className="bg-white rounded-lg p-6 w-full max-w-md shadow-xl"
+        style={{ cursor: 'default' }}
+      >
         <h2 className="text-xl font-bold mb-4 text-gray-800">
           {isEditMode ? 'Edit Knowledge Node' : isConnectedMode ? 'Create Connected Node' : 'Create Knowledge Node'}
         </h2>

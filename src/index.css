@@ -14,8 +14,23 @@ html, body, #root {
   padding: 0;
 }
 
+/* ReactFlow node styles */
 .react-flow__node {
   @apply shadow-md rounded-lg;
+}
+
+/* When modal is open, ensure stable cursor behavior */
+.fixed[style*="pointer-events: auto"] ~ .react-flow .react-flow__node {
+  pointer-events: none !important;
+}
+
+/* Add cursor stability classes */
+.cursor-stable {
+  cursor: default !important;
+}
+
+.cursor-pointer-stable {
+  cursor: pointer !important;
 }
 
 .highlight {
@@ -68,10 +83,10 @@ html, body, #root {
 /* Bible node hover effects - make hover more stable */
 .react-flow__node:hover .bible-node {
   box-shadow: 0 0 0 2px #3b82f6, 0 4px 6px -1px rgba(0, 0, 0, 0.1);
-  cursor: pointer;
+  cursor: pointer !important;
 }
 
 /* Ensure the cursor always remains consistent */
 .react-flow__node .bible-node {
-  cursor: pointer;
+  cursor: pointer !important;
 } 
